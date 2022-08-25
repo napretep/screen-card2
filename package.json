@@ -1,0 +1,19 @@
+{
+    "private": true,
+    "scripts": {
+        "postinstall": "dotnet tool restore",
+        "start": "dotnet fable watch src/fscode/app.fsproj  -o src/jscode --run vite",
+        "build": "dotnet fable src/fscode/app.fsproj -o src/jscode && vite build"
+    },
+    "devDependencies": {
+        "webpack": "^4.46.0",
+        "webpack-cli": "^3.3.0",
+        "webpack-dev-server": "^3.11.2",
+        "@crxjs/vite-plugin": "^1.0.14",
+        "vite": "^3.0.9"
+    },
+    "version": "1.0.0",
+    "dependencies": {
+
+    }
+}

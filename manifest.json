@@ -1,0 +1,37 @@
+{
+    "manifest_version": 3,
+    "name": "CRXJS Vanilla JS Example",
+    "version": "1.0.1",
+    "action": { "default_popup": "popup.html" },
+    "content_scripts": [{
+        "js": [
+            "src/jscode/content.js"
+        ],
+        "matches": [
+            "http://*/*", "https://*/*"
+        ]
+    }],
+    "background": {
+        "service_worker": "src/jscode/backend.js",
+        "type": "module"
+    },
+
+    "externally_connectable": {
+        "matches": ["*://*.google.com/*"]
+    },
+    "permissions": [
+        "tabs",
+        "notifications",
+        "storage"
+    ],
+    "web_accessible_resources": [{
+        "matches": [
+            "<all_urls>"
+        ],
+        "resources": [
+            "**/*",
+            "*"
+        ],
+        "use_dynamic_url": true
+    }]
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="typeProviders/Chrome.fs" />
+    <Compile Include="common\constant.fs" />
+    <Compile Include="common\obj.fs" />
+    <Compile Include="common\funcs.fs" />
+    <Compile Include="common\Deferred.fs" />
+    <Compile Include="common\modifies.fs" />
+    <Compile Include="common\cssClass.fs" />
+    <Compile Include="common\styleSheet.fs" />
+    <Compile Include="components\assistDot.fs" />
+    <Compile Include="components\cardTemplate.fs" />
+    <Compile Include="components\cardGenerater.fs" />
+    <Compile Include="components\cardLibrary.fs" />
+    <Compile Include="backend.fs" />
+    <Compile Include="content.fs" />
+    <Compile Include="popup.fs" />
+
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Browser.Dom" Version="2.10.0" />
+    <PackageReference Include="Fable.Fetch" Version="2.6.0" />
+    <PackageReference Include="Fable.Core" Version="4.0.0-snake-island-alpha-007" />
+  </ItemGroup>
+
+</Project>
