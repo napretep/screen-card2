@@ -9,6 +9,7 @@ open Fable.Core.JsInterop
 open Option
 open Fable.Core
 open Fable.Core.JS
+open Fetch
 open app.common.obj
 open FSharp.Collections
 
@@ -199,10 +200,10 @@ type TabEventHandleWrapper =
 //     
 // let Div classes kids =  El Html.div classes kids
 //     
-// let fetchContent url (El:HTMLElement)= 
-//     promise {
-//         let! res = fetch url []
-//         let! content = res.text ()
-//         El.innerText <- content
-//         return content
-//     }
+let fetchContent url (El:HTMLElement)= 
+    promise {
+        let! res = fetch url []
+        let! content = res.text ()
+        El.innerText <- content
+        return content
+    }

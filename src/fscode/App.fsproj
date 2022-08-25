@@ -12,6 +12,7 @@
     <Compile Include="common\modifies.fs" />
     <Compile Include="common\cssClass.fs" />
     <Compile Include="common\styleSheet.fs" />
+    <Compile Include="common\jsBind.fs" />
     <Compile Include="components\assistDot.fs" />
     <Compile Include="components\cardTemplate.fs" />
     <Compile Include="components\cardGenerater.fs" />
@@ -24,7 +25,6 @@
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" Version="2.10.0" />
     <PackageReference Include="Fable.Fetch" Version="2.6.0" />
-    <PackageReference Include="Fable.Core" Version="4.0.0-snake-island-alpha-007" />
   </ItemGroup>
 
 </Project>

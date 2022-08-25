@@ -1,5 +1,6 @@
 module content
 open System
+open App.common
 open Browser.Dom
 open Browser.Types
 open Fable.Core
@@ -9,6 +10,7 @@ open app.common
 open app.common.cssClass
 open app.common.obj
 open app.common.funcs
+open jsBind
 open app.common.modifies
 open app.components
 open app.components.assistDot
@@ -57,10 +59,10 @@ let TailWindScriptEl = document.createElement "script"
 
 
 CommonStyleEl.innerHTML <- styleSheet.commonStyle
-
+// TailWindScriptEl.innerHTML<- JsTailWindScript
 // fetchContent URL.TailWindJS TailWindScriptEl |> ignore
-// fetchContent URL.DaisyUICSS DaisyStyleEl |> ignore
-// fetchContent URL.TailwindCSS TailWindStyleEl |> ignore
+fetchContent URL.DaisyUICSS DaisyStyleEl |> ignore
+fetchContent URL.TailwindCSS TailWindStyleEl |> ignore
 
 console.log root.ownerDocument
 root.appendChild TailWindScriptEl |> ignore
@@ -120,5 +122,6 @@ document.onload<- (fun e->console.log $"document.loaded at {thisTime.toLocaleStr
 // // |> Program.withSubscription 
 // |> Program.run
 
-
+let e = document.querySelector("#baseRoot")
+console.log e
 // TODO 全体组件背景毛玻璃效果, 需要排查一致性问题, 然后除了用blur,还要用白色的border
