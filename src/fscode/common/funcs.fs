@@ -3,6 +3,7 @@
 open System
 open Browser.Types
 open Browser.Dom
+open Browser.Css
 open Chrome
 open Microsoft.FSharp.Core
 open Fable.Core.JsInterop
@@ -207,3 +208,37 @@ let fetchContent url (El:HTMLElement)=
         El.innerText <- content
         return content
     }
+
+
+type El= 
+    static member create (name ,?className ,?Id:string)=
+        let el = document.createElement name
+        className |> iter (fun value->el.className<-value)
+        Id |> iter (fun value -> el.id<-value)
+        
+        el
+
+
+
+type [<StringEnum>] Job = |Div|A|Img|Span
+
+type Tree ={
+    job:Job
+    self:string seq
+    kids:Tree seq
+}
+let brick job (self:string list) (kids:Tree list)=
+    {job=job; self=""::self;kids=kids}
+
+let div = brick Div
+let a = brick A
+let img = brick Img
+let span = brick Span
+
+let test=
+    div [] [
+        div [] []
+        div [] []
+    ]
+let build (tree:Tree) = ()
+    

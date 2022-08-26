@@ -7,14 +7,15 @@
         "build": "dotnet fable src/fscode/app.fsproj -o src/jscode && vite build"
     },
     "devDependencies": {
+        "@crxjs/vite-plugin": "^1.0.14",
+        "vite": "^3.0.9",
         "webpack": "^4.46.0",
         "webpack-cli": "^3.3.0",
-        "webpack-dev-server": "^3.11.2",
-        "@crxjs/vite-plugin": "^1.0.14",
-        "vite": "^3.0.9"
+        "webpack-dev-server": "^3.11.2"
     },
     "version": "1.0.0",
     "dependencies": {
-
+        "react": "17.0.2",
+        "react-dom": "17.0.2"
     }
 }
