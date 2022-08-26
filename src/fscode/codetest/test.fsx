@@ -40,4 +40,46 @@ x (["a";"b";yield! y(10)])
 [<Measure>] type percent
 1<percent>
 
-let inline add a b =a+b 
+let inline add a b =a+b
+
+
+
+            
+
+open System
+Guid.NewGuid().ToString().Replace("-","")[0..15]
+
+
+type Record = {
+        guid:string
+        content:string option
+        kind:Kind
+        from:string option
+        createTime:int
+        lastModifiedTime:int }
+        with    
+            static member Default = {
+                guid=""
+                content =None
+                kind=Text
+                from=None
+                createTime=0
+                lastModifiedTime=0
+            }
+        end
+    and  Kind =
+            |Text
+            |Pic
+            
+DateTime.Now.Ticks/(int64 10000000)
+
+
+type test =
+  { a: float }
+  member x.b =
+    printfn "oh no"
+    x.a * 2.
+
+let t = { a = 1. }
+t.b
+t.b

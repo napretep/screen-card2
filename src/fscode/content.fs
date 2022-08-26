@@ -1,5 +1,6 @@
 module content
 open System
+open Fable.React
 open Feliz
 open DaisyUI.Daisy
 open DaisyUI.Operators
@@ -97,37 +98,27 @@ let update msg (model: Model):Model*Cmd<Msg>  = model,Cmd.none
 
 let styles =
     Html.style ""
+let reactComponent  (x:int,y:int) (className:obj list) (kids:ReactElement seq)=
+   Html.div [
+       theme.wireframe
+       prop.style [
+           // style.width rect.width
+           // style.height rect.height
+           style.left (length.percent x)
+           style.top (length.percent y)
+       ]
+       prop.className (AsStr (className @ [``Common-component``]))
+       prop.children kids
+   ]
 let view (model: Model) (dispatch: Msg -> unit) =
     React.fragment [
-    Html.div [
-        theme.wireframe
-        prop.style [
-            style.position.fixedRelativeToWindow
-            style.left 0
-            style.top 0
-            style.zIndex 99999
-            style.backgroundColor.transparent
-        ]
-        prop.classes (AsStr [``Common-Shadow``;``Common-backdropBlur``])
-        prop.children[
-            AssistDot.view model.assistDot (Msg.FromAssistDot >> dispatch)
-            
-        ]
+    reactComponent (0,0) [] [
+        AssistDot.view model.assistDot (Msg.FromAssistDot >> dispatch)
     ]
-    Html.div [
-        theme.wireframe
-        prop.style [
-            style.position.fixedRelativeToWindow
-            style.left 100
-            style.top 100
-            style.zIndex 99999
-            style.backgroundColor.transparent
-        ]
-        prop.classes (AsStr [``Common-Shadow``;``Common-backdropBlur``])
-        prop.children[
-            yield! [for card in model.cardsOnScreen -> Card.view card (Msg.FromCard>>dispatch)]
-        ]
+    reactComponent (50,50) [] [
+        yield! [for card in model.cardsOnScreen -> Card.view card (Msg.FromCard>>dispatch)]
     ]
+
 ]
 
 

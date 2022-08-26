@@ -36,7 +36,7 @@ type RuntimeMsg =
         callback = None
         purpose = None
         content =""}
-      
+type Time= |Created of float|LastEdit of float
 type RuntimeMsgHeader = 
     {   format:RuntimeMsgFormat
         sender:RuntimeMsgActor
@@ -83,3 +83,19 @@ module ICON =
   <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5l6.785 6.785A48.1 48.1 0 0121 4.143" />
 </svg>
 """
+
+module Geometry =
+    type Rect ={
+        percentTop:int
+        percentLeft:int
+        width:int
+        height:int
+    }
+    with
+        static member Init (x, y, w, h) =
+            {
+                percentTop = x
+                percentLeft = y
+                width = w
+                height = h
+            }

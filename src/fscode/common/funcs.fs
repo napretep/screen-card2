@@ -191,11 +191,6 @@ type TabEventHandleWrapper =
     static member OnUpdate(f: 'a -> 'b -> 'c -> unit) = Action<_, _, _>(f)
 
 
-// let article (sentences:string list) =
-//     [for sentence in sentences -> Html.p sentence]
-//
-// let makeli (sentences:string list) =
-//     [for sentence in sentences -> Html.li sentence]
 let AsStr (li:obj seq) =
         li|> Seq.map (fun e-> e.ToString())|> Seq.toList
 let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:obj seq) (children:ReactElement seq)= 
@@ -214,15 +209,16 @@ let fetchContent url (El:HTMLElement)=
         return content
     }
 
+let newGuid() = Guid.NewGuid().ToString().Replace("-","")[0..15]
 
-type El= 
-    static member create (name ,?className ,?Id:string)=
-        let el = document.createElement name
-        className |> iter (fun value->el.className<-value)
-        Id |> iter (fun value -> el.id<-value)
-        
-        el
-
+// type El= 
+//     static member create (name ,?className ,?Id:string)=
+//         let el = document.createElement name
+//         className |> iter (fun value->el.className<-value)
+//         Id |> iter (fun value -> el.id<-value)
+//         
+//         el
+//
 
 //
 // type [<StringEnum>] Job = |Div|A|Img|Span
