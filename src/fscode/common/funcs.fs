@@ -1,10 +1,14 @@
 ﻿module app.common.funcs
 
+open Feliz
+open Elmish.React
+open Elmish
 open System
 open Browser.Types
 open Browser.Dom
 open Browser.Css
 open Chrome
+open Fable.React
 open Microsoft.FSharp.Core
 open Fable.Core.JsInterop
 open Option
@@ -186,21 +190,22 @@ type Continuation =
 type TabEventHandleWrapper =
     static member OnUpdate(f: 'a -> 'b -> 'c -> unit) = Action<_, _, _>(f)
 
+
 // let article (sentences:string list) =
 //     [for sentence in sentences -> Html.p sentence]
 //
 // let makeli (sentences:string list) =
 //     [for sentence in sentences -> Html.li sentence]
-// let AsStr (li:obj seq) =
-//         li|> Seq.map (fun e-> e.ToString())|> Seq.toList
-// let El (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:obj seq) (children:ReactElement seq)= 
-//     reactEl [
-//               prop.classes (AsStr classes)
-//               prop.children children
-//     ]
-//     
-// let Div classes kids =  El Html.div classes kids
-//     
+let AsStr (li:obj seq) =
+        li|> Seq.map (fun e-> e.ToString())|> Seq.toList
+let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:obj seq) (children:ReactElement seq)= 
+    reactEl [
+              prop.classes (AsStr classes)
+              prop.children children
+    ]
+
+let Div classes kids =  createEl Html.div classes kids
+
 let fetchContent url (El:HTMLElement)= 
     promise {
         let! res = fetch url []
@@ -219,26 +224,26 @@ type El=
         el
 
 
-
-type [<StringEnum>] Job = |Div|A|Img|Span
-
-type Tree ={
-    job:Job
-    self:string seq
-    kids:Tree seq
-}
-let brick job (self:string list) (kids:Tree list)=
-    {job=job; self=""::self;kids=kids}
-
-let div = brick Div
-let a = brick A
-let img = brick Img
-let span = brick Span
-
-let test=
-    div [] [
-        div [] []
-        div [] []
-    ]
-let build (tree:Tree) = ()
+//
+// type [<StringEnum>] Job = |Div|A|Img|Span
+//
+// type Tree ={
+//     job:Job
+//     self:string seq
+//     kids:Tree seq
+// }
+// let brick job (self:string list) (kids:Tree list)=
+//     {job=job; self=""::self;kids=kids}
+//
+// let div = brick Div
+// let a = brick A
+// let img = brick Img
+// let span = brick Span
+//
+// let test=
+//     div [] [
+//         div [] []
+//         div [] []
+//     ]
+// let build (tree:Tree) = ()
     

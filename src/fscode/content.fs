@@ -1,10 +1,17 @@
 module content
 open System
+open Feliz
+open DaisyUI.Daisy
+open DaisyUI.Operators
+open DaisyUI.Helpers
+open Elmish
+open Elmish.React
 open App.common
 open Browser.Dom
 open Browser.Types
 open Fable.Core
 open Fable.Core.JS
+open Feliz.DaisyUI
 open Fetch
 open app.common
 open app.common.cssClass
@@ -75,40 +82,53 @@ chromeRuntime.sendMessage {MsgToBackendHeader with content = "loaded";purpose=Ta
 
 
 
-// [<RequireQualifiedAccess>]
-// type Msg= |DoNoThing|FromAssistDot of AssistDot.Msg |FromCard of Card.Msg
-//
-// type Model={
-//     assistDot:AssistDot.Model
-//     cardsOnScreen:Card.Model seq
-// }
+[<RequireQualifiedAccess>]
+type Msg= |DoNoThing|FromAssistDot of AssistDot.Msg |FromCard of Card.Msg
 
-// let init () = {assistDot=AssistDot.init()
-//                cardsOnScreen= [Card.init()]
-//                },Cmd.none
-// let update msg (model: Model):Model*Cmd<Msg>  = model,Cmd.none
-//
-// let styles =
-//     Html.style ""
-// let view (model: Model) (dispatch: Msg -> unit) =
-//     Html.div [
-//         theme.wireframe
-//         prop.style [
-//             style.position.fixedRelativeToWindow
-//             style.left 0
-//             style.top 0
-//             style.zIndex 99999
-//             style.backgroundColor.transparent
-//             
-//         ]
-//         prop.classes (AsStr [``Common-Shadow``;``Common-backdropBlur``])
-//         prop.children[
-//             AssistDot.view model.assistDot (Msg.FromAssistDot >> dispatch)
-//             yield! [for card in model.cardsOnScreen -> Card.view card (Msg.FromCard>>dispatch)]
-//         ]
-// ]
-//
+type Model={
+    assistDot:AssistDot.Model
+    cardsOnScreen:Card.Model seq
+}
 
+let init () = {assistDot=AssistDot.init()
+               cardsOnScreen= [Card.init()]
+               },Cmd.none
+let update msg (model: Model):Model*Cmd<Msg>  = model,Cmd.none
+
+let styles =
+    Html.style ""
+let view (model: Model) (dispatch: Msg -> unit) =
+    React.fragment [
+    Html.div [
+        theme.wireframe
+        prop.style [
+            style.position.fixedRelativeToWindow
+            style.left 0
+            style.top 0
+            style.zIndex 99999
+            style.backgroundColor.transparent
+        ]
+        prop.classes (AsStr [``Common-Shadow``;``Common-backdropBlur``])
+        prop.children[
+            AssistDot.view model.assistDot (Msg.FromAssistDot >> dispatch)
+            
+        ]
+    ]
+    Html.div [
+        theme.wireframe
+        prop.style [
+            style.position.fixedRelativeToWindow
+            style.left 100
+            style.top 100
+            style.zIndex 99999
+            style.backgroundColor.transparent
+        ]
+        prop.classes (AsStr [``Common-Shadow``;``Common-backdropBlur``])
+        prop.children[
+            yield! [for card in model.cardsOnScreen -> Card.view card (Msg.FromCard>>dispatch)]
+        ]
+    ]
+]
 
 
 
@@ -117,10 +137,13 @@ console.log $" this is content.js from scapp2 version={thisTime.toLocaleString()
 
 document.onload<- (fun e->console.log $"document.loaded at {thisTime.toLocaleString()}")
 
-// Program.mkProgram init update view
-// |> Program.withReactSynchronous' baseElem
-// // |> Program.withSubscription 
-// |> Program.run
+Program.mkProgram init update view
+|> Program.withReactSynchronous' baseElem
+// |> Program.withSubscription 
+|> Program.run
+
+
+
 
 let e = document.querySelector("#baseRoot")
 console.log e
