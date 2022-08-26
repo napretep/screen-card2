@@ -145,6 +145,4 @@ Program.mkProgram init update view
 
 
 
-let e = document.querySelector("#baseRoot")
-console.log e
 // TODO 全体组件背景毛玻璃效果, 需要排查一致性问题, 然后除了用blur,还要用白色的border
