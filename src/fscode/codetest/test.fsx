@@ -83,3 +83,14 @@ type test =
 let t = { a = 1. }
 t.b
 t.b
+
+
+type text = {
+    haha:bool
+    IsMoving:bool}
+with 
+    member this.setMoving b =
+        {this with IsMoving=b}
+
+let TTT= {haha=true;IsMoving=false}
+let me = TTT.setMoving true 

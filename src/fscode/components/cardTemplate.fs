@@ -112,9 +112,8 @@ module Card =
                if callback.IsSome then
                  prop.onClick callback.Value ]
 
-    Daisy.card [ prop.classes (AsStr [ "card-side"; ``Common-glass`` ])
-                 prop.style [ backgroundColor.transparent ]
-                 card.bordered
+    Daisy.card [ prop.classes (AsStr [ "card-side"; Common_glass ])
+                 prop.style [  ]
                  prop.children [ textBtn (px 0, px 0, "❌", None)
                                  textBtn (px 0, calc ("100% - 19px"), "📌", None)
                                  if model.records[1].content <> "" then

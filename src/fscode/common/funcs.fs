@@ -211,6 +211,9 @@ let fetchContent url (El:HTMLElement)=
 
 let newGuid() = Guid.NewGuid().ToString().Replace("-","")[0..15]
 
+let (==) (input:string list) (preset:string) =
+        input|>Seq.fold (fun sum next->Some next) None |>Option.defaultValue preset
+
 // type El= 
 //     static member create (name ,?className ,?Id:string)=
 //         let el = document.createElement name

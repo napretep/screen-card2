@@ -55,6 +55,6 @@ module CardLib =
       
     ]
 
-    Div [ ``CardLib-1-Root``;``Common-glass`` ] [
+    Div [ ``CardLib-1-Root``;Common_glass ] [
       
     ]

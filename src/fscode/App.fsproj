@@ -13,6 +13,7 @@
     <Compile Include="common\cssClass.fs" />
     <Compile Include="common\styleSheet.fs" />
     <Compile Include="common\jsBind.fs" />
+    <Compile Include="common\btns.fs" />
     <Compile Include="components\assistDot.fs" />
     <Compile Include="components\cardTemplate.fs" />
     <Compile Include="components\cardGenerater.fs" />
