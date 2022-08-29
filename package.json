@@ -3,6 +3,7 @@
     "scripts": {
         "prestart": "@powershell Copy-item -path ./public/static/* -destination ./dist/static -force ",
         "postinstall": "dotnet tool restore",
+        "justFsharpStart": "dotnet fable watch src/fscode/app.fsproj -o src/jscode",
         "start": "dotnet fable watch src/fscode/app.fsproj  -o src/jscode --run vite",
         "build": "dotnet fable src/fscode/app.fsproj -o src/jscode && vite build"
     },
@@ -13,6 +14,7 @@
     "version": "1.0.0",
     "dependencies": {
         "react": "17.0.2",
-        "react-dom": "17.0.2"
+        "react-dom": "17.0.2",
+        "react-draggable": "^4.4.5"
     }
 }

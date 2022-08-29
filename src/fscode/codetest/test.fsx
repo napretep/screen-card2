@@ -1,96 +1,65 @@
-﻿type Msg = {
-    content:string 
-    callback: obj->unit option
-}
-type Msg2 = Msg option 
-type sendMsg = obj option-> unit 
-let g (s:obj option) =
-    match s with
-    |Some x -> (
-            match x with
-            | :? Msg -> printf "string"
-            | _ -> printf "not string"
-        )
-    |None -> printf "None"
+﻿
+["1";"2"] |> List.fold (fun sum next -> sum+" "+ next) "" 
+type CssClass =
+    |Common_Shadow
+    |``Common-backdropBlur``
+    |``Common-fixed``
+    |Common_glass
+    |Common_component
+    |Common_btn
+    |Common_displayNone
+    |AssistDot_carrier
+    |AssistDot_self
+    |AssistDot_btn
+    |AssistDot_btn_moveBar
+    |``CardLib-1-Root``
+    |``CardTemplate-btn-``
+    with
+        member this.ToStr = this.ToString()
+    end
 
-// g  (Some {content="123";callback=None})
+Common_btn.ToStr
 
 
-if not true then printfn "ok" else printfn "no"
+let i (a) (b) = a + b
+
+open FSharp.Collections
+let mutable n = Map<string,int>[]
+n<-n.Add ("1",2)
+n<-n.Add ("X",2)
+n
+
+open FSharp.Core
 
 
+type Author(name : string) =
+    let mutable _name = name;
 
-let resolved = function
-    | (a:string) -> printfn "%A" a
-    | (v:string) -> printfn "%A" v
-    | (v:string) ->  printfn "%A" v
+    //creates event
+    let nameChanged = new Event<string>()
     
-resolved("a")
+    //exposed event handler
+    member this.NameChanged = nameChanged.Publish
+    
+    member this.Name
+        with get() = _name
+        and set(value) =
+            _name <- value
 
-let a b c = printfn "123"
-"b"|> a("c")
-
-
-let x (b:seq<string>) = b
-let y n = [for i  in 1..n -> $"{i}"]
-x (["a";"b";yield! y(10)])
-
-"123".ToString()
-
-[<Measure>] type percent
-1<percent>
-
-let inline add a b =a+b
-
-
-
+            //invokes event handler
+            nameChanged.Trigger(_name)
             
-
-open System
-Guid.NewGuid().ToString().Replace("-","")[0..15]
-
-
-type Record = {
-        guid:string
-        content:string option
-        kind:Kind
-        from:string option
-        createTime:int
-        lastModifiedTime:int }
-        with    
-            static member Default = {
-                guid=""
-                content =None
-                kind=Text
-                from=None
-                createTime=0
-                lastModifiedTime=0
-            }
-        end
-    and  Kind =
-            |Text
-            |Pic
             
-DateTime.Now.Ticks/(int64 10000000)
+let p = Author("Mark")
+p.NameChanged.Add(fun name -> printfn "-- Name changed! New name: %s" name)
+p.Name <- "Andy"
 
+let click = Event<string>()
+let clicked = click.Publish
 
-type test =
-  { a: float }
-  member x.b =
-    printfn "oh no"
-    x.a * 2.
+let add a b =
+    let x = a+b
+    click.Trigger($"{x}")
 
-let t = { a = 1. }
-t.b
-t.b
+clicked.Add <| fun x->printfn $"{x}" 
 
-
-type text = {
-    haha:bool
-    IsMoving:bool}
-with 
-    member this.setMoving b =
-        {this with IsMoving=b}
-
-let TTT= {haha=true;IsMoving=false}
-let me = TTT.setMoving true 

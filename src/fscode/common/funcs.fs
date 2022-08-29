@@ -191,7 +191,7 @@ type TabEventHandleWrapper =
     static member OnUpdate(f: 'a -> 'b -> 'c -> unit) = Action<_, _, _>(f)
 
 
-let AsStr (li:obj seq) =
+let AsStr  (li:obj seq) =
         li|> Seq.map (fun e-> e.ToString())|> Seq.toList
 let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:obj seq) (children:ReactElement seq)= 
     reactEl [
@@ -199,7 +199,7 @@ let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:
               prop.children children
     ]
 
-let Div classes kids =  createEl Html.div classes kids
+// let Div classes kids =  createEl Html.div classes kids
 
 let fetchContent url (El:HTMLElement)= 
     promise {
