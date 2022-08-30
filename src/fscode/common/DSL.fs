@@ -57,6 +57,8 @@ with
     children =kids
   }
 end
+let getElementFromBrick (brick:Brick) (query:string):HTMLElement=
+  brick.element.Value.querySelector(query):?>HTMLElement
 
 let Div = Brick.Builder Div 
 let Input = Brick.Builder Input
@@ -92,7 +94,7 @@ let setUpProperty (node:Brick) (root:Brick) =
   )
  )
  
- if node.element.Value.id = "" then node.element.Value.id <- Guid.NewGuid().ToString()[0..7]
+ if node.element.Value.id = "" then node.element.Value.id <- newGuid()
  root.hashmap<-root.hashmap.Add (node.element.Value.id,node.element.Value)
  
 let build (root:Brick) =

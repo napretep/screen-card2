@@ -15,6 +15,7 @@
     <Compile Include="common\jsBind.fs" />
     <Compile Include="common\btns.fs" />
     <Compile Include="common\DSL.fs" />
+    <Compile Include="common\globalTypes.fs" />
     <Compile Include="components\assistDot.fs" />
     <Compile Include="components\cardTemplate.fs" />
     <Compile Include="components\cardGenerater.fs" />

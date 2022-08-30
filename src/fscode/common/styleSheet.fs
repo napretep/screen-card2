@@ -32,6 +32,9 @@ type [<StringEnum>] CssClass =
     |Card_carrier
     |Card_self
     |Card_header
+    |Card_header_btn_move
+    |Card_header_btn_pin
+    |Card_header_btn_close
     |Card_body
     |Card_body_menu
     |CardField_self
@@ -60,6 +63,16 @@ border-radius: 10px;
   box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   background   : #ededed00;
+}}
+"""
+let hideScrollBar selector = $"""
+{selector}::-webkit-scrollbar {{
+    width: 0px;
+    height: 0px;
+}}
+{selector}::-webkit-scrollbar-thumb {{
+}}
+{selector}::-webkit-scrollbar-track {{
 }}
 """
 type Str =
@@ -104,7 +117,7 @@ overflow: auto;
 	display:flex;
 	flex-direction:row;
 	align-items:stretch;
-	overflow: hidden;
+	overflow: auto;
 }}
 .{Card_header}{{
 	display:flex;
@@ -120,9 +133,12 @@ overflow: auto;
 	width: 1px;
 }}
 .{CardField_content_img}{{
-	position:absolute;
 	width:100%%;
+	position:absolute;
 }}
+{hideScrollBar $".{CardField_content}"}
+{hideScrollBar $".{CardField_content} .{Common_textArea}"}
+
 .{Card_body_menu} {{
 	width: 95%%;
 	margin: 3px;
@@ -218,12 +234,10 @@ flex-grow:1;
 
 let commonStyle = $"""
 .{CssClass.Common_glass}{{
-backdrop-filter: blur(25px) ;
+backdrop-filter: blur(25px) saturate(200%%) ;
 -webkit-backdrop-filter: blur(25px) saturate(200%%);
-/*background-color: rgba(189, 211, 207, 0.3);
-border: 1px solid rgba(209, 213, 219, 0.3);
-margin:1px;*/
-box-shadow:0 0 15px rgb(87 ,147 ,135 ,0.3);
+background-color: #ffffff40;
+box-shadow:2px 2px 2px rgb(0 ,0 ,0 ,0.14);
 
 }}
 .{CssClass.Common_Shadow}{{
@@ -236,7 +250,9 @@ box-shadow:0 0 15px rgb(87 ,147 ,135 ,0.3);
     position:fixed;
     background-color:transparent;
     z-index : 999999;
-    background-image: linear-gradient(180deg, #2af59820 0%%, #009efd20 100%%);
+    /*background-image: linear-gradient(180deg, #2af59820 0%%, #009efd20 100%%);
+    background: linear-gradient(to bottom, #D5DEE7 0%%, #E8EBF2 50%%, #E2E7ED 100%%), linear-gradient(to bottom, rgba(0,0,0,0.02) 50%%, rgba(255,255,255,0.02) 61%%, rgba(0,0,0,0.02) 73%%), linear-gradient(33deg, rgba(255,255,255,0.20) 0%%, rgba(0,0,0,0.20) 100%%); background-blend-mode: normal,color-burn;*/
+    
 }}
 .{CssClass.Common_fixed}{{
     position:fixed;

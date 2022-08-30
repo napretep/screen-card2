@@ -1,65 +1,55 @@
 ﻿
-["1";"2"] |> List.fold (fun sum next -> sum+" "+ next) "" 
-type CssClass =
-    |Common_Shadow
-    |``Common-backdropBlur``
-    |``Common-fixed``
-    |Common_glass
-    |Common_component
-    |Common_btn
-    |Common_displayNone
-    |AssistDot_carrier
-    |AssistDot_self
-    |AssistDot_btn
-    |AssistDot_btn_moveBar
-    |``CardLib-1-Root``
-    |``CardTemplate-btn-``
-    with
-        member this.ToStr = this.ToString()
-    end
 
-Common_btn.ToStr
+module DuckTyping
+
+// Demonstrates F#'s compile-time duck-typing.
 
 
-let i (a) (b) = a + b
-
-open FSharp.Collections
-let mutable n = Map<string,int>[]
-n<-n.Add ("1",2)
-n<-n.Add ("X",2)
-n
-
-open FSharp.Core
 
 
-type Author(name : string) =
-    let mutable _name = name;
+type RedDuck =
+    { Name : string }
+    member this.Quack () = "Red"
 
-    //creates event
-    let nameChanged = new Event<string>()
-    
-    //exposed event handler
-    member this.NameChanged = nameChanged.Publish
-    
-    member this.Name
-        with get() = _name
-        and set(value) =
-            _name <- value
+type BlueDuck =
+    { Name : string }
+    member this.Quack () = "Blue"
 
-            //invokes event handler
-            nameChanged.Trigger(_name)
-            
-            
-let p = Author("Mark")
-p.NameChanged.Add(fun name -> printfn "-- Name changed! New name: %s" name)
-p.Name <- "Andy"
+let inline name this =
+    (^a : (member Name : string) this)
 
-let click = Event<string>()
-let clicked = click.Publish
+let inline quack this =
+    (^a : (member Quack : unit -> string) this)
 
-let add a b =
-    let x = a+b
-    click.Trigger($"{x}")
+let howard = name { RedDuck.Name = "Howard" }
+let bob = name { BlueDuck.Name = "Bob" }
+let red = quack { RedDuck.Name = "Jim" }
+let blue = quack { BlueDuck.Name = "Fred" }
 
-clicked.Add <| fun x->printfn $"{x}" 
+
+type Iduck=
+    abstract member say:string
+type Aduck={
+    _say:string
+    other:int
+}
+
+type Bduck ={
+    _say:string
+    another:bool
+}
+with
+    interface Iduck with
+        member I.say = "123"
+type ABduck = Aduck of Aduck|Bduck of Bduck
+type Ducks={
+    group : Iduck list 
+}
+//
+// let realDuck = {
+//     group=[
+//         {_say="A";other=1}
+//         Bduck {say="B";another=false}
+//     ]
+// }
 

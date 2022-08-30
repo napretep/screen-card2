@@ -1,10 +1,12 @@
 module content
+open Microsoft.FSharp.Collections
 open app.common
 open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
 open app.common.styleSheet
 open app.common.DSL
+open app.common.eventtypes
 open app.components
 open Browser.Types
 open Browser
@@ -15,6 +17,12 @@ open app.components.cardLibrary
 open app.components.cardTemplate
 
 // type _ExtensionMessageEvent = (obj option *  MessageSender *  (obj -> unit)) -> unit
+
+
+// let globalEvent = {
+//   mouseMoving=Event<MouseEvent>()
+//   mouseUp = Event<MouseEvent>()
+// }
 
 let x:HTMLElement = document.createElement "div"
 x.style
@@ -88,24 +96,14 @@ module AssistDot =
     let Close = Event.Close.Publish
     let OpenCardLib = Event.OpenCardLib.Publish
     let CreateCard = Event.CreateCard.Publish
-  type diffPoint = {
-    mousePoint:pointF
-    elementPoint:pointF
-  }
-  with
-    static member set x1 y1 x2 y2 =
-      {
-        mousePoint = pointF.set x1 y1
-        elementPoint = pointF.set x2 y2
-      }
-  end 
+
   type State ={
-    mutable MoveBeginRect:diffPoint
+    mutable MoveBeginRect:DiffPoint
     mutable MoveBegin:bool
     mutable IsClosed:bool
   }
   let mutable state = {
-    MoveBeginRect= diffPoint.set -1 -1 -1 -1
+    MoveBeginRect= DiffPoint.set -1 -1 -1 -1
     MoveBegin = false
     IsClosed = false
   }
@@ -147,7 +145,8 @@ module AssistDot =
     let mouse = state.MoveBeginRect.mousePoint
     let element = state.MoveBeginRect.elementPoint
     e.style.left<- $"{element.left+pos.left-mouse.left}px"
-    e.style.top <- $"{element.top+pos.top-mouse.top}px"    
+    e.style.top <- $"{element.top+pos.top-mouse.top}px"
+    // e.style.transform<- $"translate({pos.left-mouse.left}px,{pos.top-mouse.top}px)"
   type EventHandler =
     static member WatchMouseMove (e:Event) =
       console.log $"mouse move at {e}"
@@ -160,7 +159,7 @@ module AssistDot =
       
   Subscribe.MoveBegin.Add (fun beginAt->
   let cube = getViewBoundingRect()
-  state.MoveBeginRect<- diffPoint.set beginAt.left beginAt.top cube.left cube.top
+  state.MoveBeginRect<- DiffPoint.set beginAt.left beginAt.top cube.left cube.top
   state.MoveBegin <- true
   )
 
@@ -169,7 +168,11 @@ module AssistDot =
     view.element.Value.style.display<-"none"
 
 
-
+let globalCore ={
+  event=GlobalEvent.init
+  root = baseElem
+  hashMap = Map<string,Brick>[]
+}
 
 
 
@@ -187,20 +190,32 @@ AssistDot.Subscribe.OpenCardLib.Add (fun ()->
     CardLib.method.show()
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
-  let newCard =  build <| Card.atom(pointF.set 100 200)
-  baseElem.appendChild newCard.element.Value |> ignore
+  let newCard = Card.Init globalCore (pointF.set 100 200)
+  ()
+  // baseElem.appendChild newCard.element.Value |> ignore
 )
-
+let newCard = Card.Init globalCore (pointF.set 100 200)
+console.log  newCard.view.element.Value
 window.onmousemove <- fun e->
+  globalCore.event.mouseMoving.Trigger(e)
   match AssistDot.state.MoveBegin with 
   |true -> AssistDot.EventHandler.WatchMouseMove e
   |_ ->()
+  // if newCard.state.IsMoving then
+  //   Card.method.updatePosition newCard (pointF.set e.clientX e.clientY)
 
 window.onmouseup <- fun e->
+  globalCore.event.mouseUp.Trigger(e)
   match AssistDot.state.MoveBegin with
   |true ->
     AssistDot.state.MoveBegin<-false 
   |_ -> ()
+
+
+
+
+
+
 
 console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")
