@@ -234,11 +234,11 @@ flex-grow:1;
 
 let commonStyle = $"""
 .{CssClass.Common_glass}{{
-backdrop-filter: blur(25px) saturate(200%%) ;
+ backdrop-filter: blur(25px) saturate(200%%) ;
 -webkit-backdrop-filter: blur(25px) saturate(200%%);
-background-color: #ffffff40;
-box-shadow:2px 2px 2px rgb(0 ,0 ,0 ,0.14);
-
+ background-color: transparent;
+ box-shadow:2px 2px 1px rgb(0 ,0 ,0 ,0.14);
+/*filter: drop-shadow(1px 1px 1px #00000030);*/
 }}
 .{CssClass.Common_Shadow}{{
     box-shadow: 0px 0px 8px;
@@ -248,7 +248,7 @@ box-shadow:2px 2px 2px rgb(0 ,0 ,0 ,0.14);
 }}
 .{CssClass.Common_component}{{
     position:fixed;
-    background-color:transparent;
+    background-color:#ffffff30;
     z-index : 999999;
     /*background-image: linear-gradient(180deg, #2af59820 0%%, #009efd20 100%%);
     background: linear-gradient(to bottom, #D5DEE7 0%%, #E8EBF2 50%%, #E2E7ED 100%%), linear-gradient(to bottom, rgba(0,0,0,0.02) 50%%, rgba(255,255,255,0.02) 61%%, rgba(0,0,0,0.02) 73%%), linear-gradient(33deg, rgba(255,255,255,0.20) 0%%, rgba(0,0,0,0.20) 100%%); background-blend-mode: normal,color-burn;*/

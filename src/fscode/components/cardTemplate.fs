@@ -42,13 +42,17 @@ module Card =
           MoveEnd=Event<unit>()
           Pin=Event<pointF>()
     }
+  
+  // type Core2 =
+  //   inherit ICore 
+  
 
-  type Core = {
-    mutable view:Brick
-    mutable state:State
-    mutable event:Event'
-    Id : string 
-  }
+  type Core(view:Brick,state:State,event:Event',Id:string) =
+    inherit ICore(view,Id)
+      // member val view=view with get,set
+      // member val Id = Id with get,set
+    member val event = event with get,set
+    member val state = state with get,set
   type CardFieldContent = |Text of string |Image of string
   
   type ViewUpdate =
@@ -123,13 +127,13 @@ module Card =
     ]
   let Init (env:GlobalCore) (p:pointF) =
     let view = build <|atom (p:pointF)
-    let core = {
-      view = view
-      event = Event'.init
-      state = State.init
+    let core = Core(
+      view = view,
+      event = Event'.init,
+      state = State.init,
       Id = view.element.Value.id
-    }
-    // env.addCard core
+    )
+    env.addCard core
     console.log env.hashMap
     let close = getElementFromBrick view $".{Card_header_btn_close}" 
     let move = getElementFromBrick view $".{Card_header_btn_move}"

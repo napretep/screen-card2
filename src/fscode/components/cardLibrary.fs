@@ -22,6 +22,7 @@ module CardLib =
     IsShow =false
     rect = Rect.set 100 200 300 300
   }
+  
   let cardItem img text =
     Div [Id CssClass.CardLib_card_item;] [
       Div [Id CssClass.CardLib_card_content;classes [CssClass.Common_glass]] [

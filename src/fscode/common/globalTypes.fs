@@ -7,9 +7,9 @@ open app.common.DSL
 open app.common.obj
 open app.common.funcs
 
-type ICore =
-  abstract member view:Brick
-  abstract member Id:string 
+type ICore (view,Id) =
+  member val view:Brick=view with get,set
+  member val Id:string=Id with get,set
 
 // type ComponentCore = Card of Card.Core
 
@@ -45,8 +45,11 @@ type GlobalCore = {
   root:HTMLElement
   mutable hashMap:Map<string,ICore>
 }
-// with
-//   member inline this.addCard (^core:) =
-//     this.root.appendChild core.view.element.Value |>ignore
-//     this.hashMap <- this.hashMap.Add (core.Id,core)
-  // member inline this.removeCard (core:ICore) = 
+with
+  member inline this.addCard (core:ICore) =
+    this.root.appendChild core.view.element.Value |>ignore
+    this.hashMap <- this.hashMap.Add (core.Id,core)
+  member inline this.removeCard (core:ICore) =
+    this.root.removeChild core.view.element.Value
+    this.hashMap.Remove core.Id
+    

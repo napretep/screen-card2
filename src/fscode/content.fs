@@ -171,7 +171,7 @@ module AssistDot =
 let globalCore ={
   event=GlobalEvent.init
   root = baseElem
-  hashMap = Map<string,Brick>[]
+  hashMap = Map<string,ICore>[]
 }
 
 
@@ -194,8 +194,8 @@ AssistDot.Subscribe.CreateCard.Add(fun ()->
   ()
   // baseElem.appendChild newCard.element.Value |> ignore
 )
-let newCard = Card.Init globalCore (pointF.set 100 200)
-console.log  newCard.view.element.Value
+// let newCard = Card.Init globalCore (pointF.set 100 200)
+// console.log  newCard.view.element.Value
 window.onmousemove <- fun e->
   globalCore.event.mouseMoving.Trigger(e)
   match AssistDot.state.MoveBegin with 
