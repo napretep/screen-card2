@@ -31,27 +31,27 @@ module CardLib =
       ]
       Div [Id CssClass.CardLib_card_btns;
            ] [
+        Div [classes [CssClass.Common_glass;CssClass.Common_btn];
+             InnerHtml ICON.del ] []
         Div [classes [CssClass.Common_glass;CssClass.Common_btn]
-             InnerHtml ICON.trashBin ] []
-        Div [classes [CssClass.Common_glass;CssClass.Common_btn]
-             InnerHtml <| ICON.expand []] []
+             InnerHtml <| ICON.expand ] []
       ]
   ]
   let testCard = cardItem "https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" "1231231231 aa a a a a a"
   let atom =
     Div [ Classes << AsStr <| [ CssClass.Common_component;CssClass.Common_displayNone]
           CSSPosition ("100px","400px")
-          Id CssClass.CardLib_carrier.S
+          Id CssClass.CardLib_carrier
     ] [
-      Div [ Id CssClass.CardLib_self.S
+      Div [ Id CssClass.CardLib_self
             Classes<<AsStr <| [CssClass.Common_glass]
       ] [
-        Div [ Id CssClass.CardLib_toolbar.S
+        Div [ Id CssClass.CardLib_toolbar
               Classes<<AsStr <| [CssClass.Common_glass]
         ] [
-          Span [ Id CssClass.CardLib_toolbar_left.S
+          Span [ Id CssClass.CardLib_toolbar_left
           ] [
-            Input [ Id CssClass.CardLib_searchInput.S
+            Input [ Id CssClass.CardLib_searchInput
                     Classes<<AsStr <| [CssClass.Common_glass;CssClass.Common_btn;CssClass.Common_textArea]
                     PlaceHolder "search"
             ] []
@@ -62,7 +62,7 @@ module CardLib =
           Span [Classes<<AsStr <| [CssClass.Common_glass;CssClass.Common_btn;CssClass.Common_moveBar]
                 InnerHtml <| ICON.HorizontalMoveBar []
           ] []
-          Span [Id CssClass.CardLib_toolbar_right.S ] [
+          Span [Id CssClass.CardLib_toolbar_right ] [
             Span [classes [CssClass.Common_glass;CssClass.Common_btn]
                   InnerHtml <| ICON.pin []
                   ] []
@@ -71,7 +71,7 @@ module CardLib =
                   ] []
           ]
         ]
-        Div [Id <| CssClass.CardLib_container.S; classes [CssClass.Common_glass]] [
+        Div [Id <| CssClass.CardLib_container; classes [CssClass.Common_glass]] [
           testCard
           testCard
           testCard

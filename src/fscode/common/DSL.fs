@@ -3,11 +3,15 @@ open System
 open Browser.Types
 open Fable.Core
 open Browser
+open Fable.Core.JS
 open Microsoft.FSharp.Collections
 open app.common.funcs
 open app.common.obj
 
-
+type SpecificName=
+  |FieldId of string
+  |CardId of string
+  |FieldPosi of int
 type InnerStyle =
   |Left
   |Top
@@ -43,9 +47,10 @@ type [<StringEnum>] Tag =
 type Brick ={
   tagType:Tag
   mutable element:HTMLElement option
-  mutable hashmap:Map<string,HTMLElement>
+  mutable hashmap:Map<string,Brick>
   property : Prop list
-  children : Brick list
+  mutable children : Brick list
+  mutable Id:string
 }
 with 
   static member Builder tag prop kids =
@@ -55,7 +60,37 @@ with
     tagType = tag
     property = prop
     children =kids
+    Id = ""
   }
+  member this.DelKid (kids:Brick list) =     
+    this.DelKidFromDom>>this.DelKidFromBrick>>this.DelKidFromHashMap
+
+  member private this.DelKidFromDom kids =
+    kids |> List.map (fun (kid:Brick)->
+      kid.element.Value.remove()
+      kid
+      )
+    
+  member private this.DelKidFromBrick  (kids:Brick list) = 
+    let newKids = this.children |> List.filter (fun (x:Brick)->
+      kids |> List.forall (fun (y:Brick)->y.Id <> x.Id)
+      )
+    this.children <- newKids
+    kids
+  member private this.DelKidFromHashMap (kids:Brick list) =
+    kids|>List.map (fun (e:Brick)->this.hashmap.Remove e.Id)|>ignore
+    kids
+    
+  //完成两件事 1 插入DOM, 2插入hashMap 3插入Brick.KIds
+  member this.AddKid (kids:Brick list,?At:int) =
+    let at = At |> Option.defaultValue this.children.Length
+    ignore <| this.children <- List.insertManyAt at kids <| this.children
+    kids|>List.map (fun (e:Brick)->
+                     this.element.Value.insertBefore e.element.Value,this.children[at-1].element.Value
+                     this.hashmap.Add (e.Id,e)  
+                     e
+                     )  
+    
 end
 let getElementFromBrick (brick:Brick) (query:string):HTMLElement=
   brick.element.Value.querySelector(query):?>HTMLElement
@@ -95,7 +130,8 @@ let setUpProperty (node:Brick) (root:Brick) =
  )
  
  if node.element.Value.id = "" then node.element.Value.id <- newGuid()
- root.hashmap<-root.hashmap.Add (node.element.Value.id,node.element.Value)
+ node.Id <- node.element.Value.id
+ root.hashmap<- root.hashmap.Add (node.Id,node)
  
 let build (root:Brick) =
   let rec subBuild (papa:Brick option) (kid:Brick) (root:Brick)=

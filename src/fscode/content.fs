@@ -98,12 +98,12 @@ module AssistDot =
     let CreateCard = Event.CreateCard.Publish
 
   type State ={
-    mutable MoveBeginRect:DiffPoint
+    mutable MoveBeginRect:MouseDomPoint
     mutable MoveBegin:bool
     mutable IsClosed:bool
   }
   let mutable state = {
-    MoveBeginRect= DiffPoint.set -1 -1 -1 -1
+    MoveBeginRect= MouseDomPoint.set -1 -1 -1 -1
     MoveBegin = false
     IsClosed = false
   }
@@ -111,15 +111,15 @@ module AssistDot =
   let atom:Brick = 
     Div [
       Classes << AsStr <| [CssClass.Common_component;]
-      Id  CssClass.AssistDot_carrier.S
+      Id  CssClass.AssistDot_carrier
       CSSPosition ("calc(100% - 30px)","200px")
     ] [
       Div [ Classes <<AsStr <|[CssClass.Common_glass]
-            Id CssClass.AssistDot_self.S
+            Id CssClass.AssistDot_self
              ] [
             Div [ Classes <<AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
                   InnerHtml <| ICON.HorizontalMoveBar []
-                  Id CssClass.Common_moveBar.S
+                  Id CssClass.Common_moveBar
                   OnMouseDown <| fun e-> Event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
                    ] [  ]
             Div [ Classes <<AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
@@ -159,7 +159,7 @@ module AssistDot =
       
   Subscribe.MoveBegin.Add (fun beginAt->
   let cube = getViewBoundingRect()
-  state.MoveBeginRect<- DiffPoint.set beginAt.left beginAt.top cube.left cube.top
+  state.MoveBeginRect<- MouseDomPoint.set beginAt.left beginAt.top cube.left cube.top
   state.MoveBegin <- true
   )
 
@@ -190,9 +190,8 @@ AssistDot.Subscribe.OpenCardLib.Add (fun ()->
     CardLib.method.show()
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
-  let newCard = Card.Init globalCore (pointF.set 100 200)
+  let newCard = Card.Init globalCore (pointF.set 200 200)
   ()
-  // baseElem.appendChild newCard.element.Value |> ignore
 )
 // let newCard = Card.Init globalCore (pointF.set 100 200)
 // console.log  newCard.view.element.Value

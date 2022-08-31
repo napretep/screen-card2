@@ -7,12 +7,14 @@ type [<StringEnum>] CssClass =
     |Common_Shadow
     |Common_backdropBlur
     |Common_fixed
+    |Common_absolute
     |Common_glass
     |Common_component
     |Common_btn
     |Common_displayNone
     |Common_moveBar
     |Common_textArea
+    |Common_flex_grow_1
     |AssistDot_carrier
     |AssistDot_self
     |AssistDot_btn
@@ -32,17 +34,25 @@ type [<StringEnum>] CssClass =
     |Card_carrier
     |Card_self
     |Card_header
+    |Card_header_left_btn
+    |Card_header_right_btn
+    |Card_header_side_btn
     |Card_header_btn_move
     |Card_header_btn_pin
     |Card_header_btn_close
+    |Card_header_btn_addImg
+    |Card_header_btn_addTxt
     |Card_body
-    |Card_body_menu
     |CardField_self
     |CardField_dragBar
     |CardField_content
     |CardField_content_text
     |CardField_content_img
     |CardField_btns
+    |CardField_btns_link
+    |CardField_btns_expand
+    |CardField_expanded
+    |CardField_btns_del
     
     with
         member this.S = this.ToString()
@@ -80,13 +90,13 @@ type Str =
     |CssClass of CssClass
 
 let cardStyle = $"""
-.{Card_carrier}{{
+#{Card_carrier}{{
     
 }}
-.{Card_self}{{
+#{Card_self}{{
 	
 }}
-.{Card_body}{{
+#{Card_body}{{
 width:300px;
 height:300px;
 display:flex;
@@ -95,36 +105,39 @@ align-items:center;
 resize: both;
 overflow: auto;
 }}
-
-{makeScrollBar $".{Card_body}"}
+.{CardField_expanded}{{
+	min-height:100%%
+}}
+{makeScrollBar $"#{Card_body}"}
 
 .{CardField_self}{{
-	height:75px;
+	/*height:75px;*/
 	width:95%%;
 	display: flex;
 	align-items:stretch;
 	margin:3px;
+	flex-grow:0
 }}
-.{CardField_btns}{{
+#{CardField_btns}{{
 	height:auto;
 	display:flex;
 	flex-direction:column;
 	align-items:stretch;
 	justify-content: space-between;
 }}
-.{CardField_content}{{
+#{CardField_content}{{
 	flex:1 0 auto;
 	display:flex;
 	flex-direction:row;
 	align-items:stretch;
 	overflow: auto;
 }}
-.{Card_header}{{
+#{Card_header}{{
 	display:flex;
-	flex-direction:row-reverse;
+	flex-direction:row;
 	justify-content:space-between;
 }}
-.{CardField_content_text}{{
+#{CardField_content_text}{{
 	resize:none;
 	outline:none;
 	flex:1 0 auto;
@@ -132,27 +145,25 @@ overflow: auto;
 	font-family: "Microsoft JhengHei Light";
 	width: 1px;
 }}
-.{CardField_content_img}{{
+#{CardField_content_img}{{
 	width:100%%;
 	position:absolute;
 }}
-{hideScrollBar $".{CardField_content}"}
-{hideScrollBar $".{CardField_content} .{Common_textArea}"}
+{hideScrollBar $"#{CardField_content}"}
+{hideScrollBar $"#{CardField_content} .{Common_textArea}"}
 
-.{Card_body_menu} {{
-	width: 95%%;
+.{Card_header_side_btn} {{
 	margin: 3px;
 	display: flex;
-	justify-content: space-around;
+	flex-direction: row;
 }}
-.{Card_body_menu}>span{{
-	width: 49%%;
+.{Card_header_side_btn}>span{{
 	text-align: center;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }}
-.{CardField_dragBar}{{
+#{CardField_dragBar}{{
 	width: 20px;
 	height:auto;
 	display:flex;
@@ -167,57 +178,57 @@ overflow: auto;
 let cardLibStyle = $"""
 
 #{CssClass.CardLib_toolbar}{{
-display:flex;
-justify-content: space-between;
-align-items:center;
+	display:flex;
+	justify-content: space-between;
+	align-items:center;
 }}
 #{CssClass.CardLib_toolbar_left}{{
-display:flex;
-align-items:center;
-min-width:30%%;
+	display:flex;
+	align-items:center;
+	min-width:30%%;
 }}
 #{CssClass.CardLib_toolbar_right}{{
-display:flex;
-align-items:center;
+	display:flex;
+	align-items:center;
 }}
 #{CssClass.CardLib_container}{{
-margin:2px;
-display:flex;
-justify-content: space-around;
-align-content: start;
-overflow-y: scroll;
-scroll-behavior: smooth;
-flex-wrap: wrap;
-width:400px;
-resize:both;
+	margin:2px;
+	display:flex;
+	justify-content: space-around;
+	align-content: start;
+	overflow-y: scroll;
+	scroll-behavior: smooth;
+	flex-wrap: wrap;
+	width:400px;
+	resize:both;
 }}
 
 {makeScrollBar $"#{CardLib_container}"}
 
 #{CssClass.CardLib_card_item}{{
-display:flex;
-width:235px;
-height:45px;
-margin:2px;
-align-items:stretch;
+	display:flex;
+	width:235px;
+	height:45px;
+	margin:2px;
+	align-items:stretch;
 }}
 #{CssClass.CardLib_card_content}>img{{
-width:100%%;
-object-fit: cover;
-overflow:hidden;
+	width:100%%;
+	object-fit: cover;
+	overflow:hidden;
 }}
 #{CssClass.CardLib_card_content}{{
-display:flex;
-overflow:hidden;
-height: 100%%;
-align-items:center;
+	display:flex;
+	overflow:hidden;
+	height: 100%%;
+	align-items:center;
 }}
 #{CssClass.CardLib_card_btns}{{
-height:auto;
-display:flex;
-flex-direction: column;
-align-items:stretch;
-justify-content: space-between;
+	height:auto;
+	display:flex;
+	flex-direction: column;
+	align-items:stretch;
+	justify-content: space-between;
 }}
 #{CssClass.CardLib_card_btns}>span{{
 flex-grow: 2;
@@ -233,12 +244,22 @@ flex-grow:1;
 """
 
 let commonStyle = $"""
+svg{{
+padding:4px;
+}}
+.{Common_flex_grow_1}{{
+	flex-grow:1;
+}}
+.{Common_absolute}{{
+ position:absolute;
+}}
 .{CssClass.Common_glass}{{
  backdrop-filter: blur(25px) saturate(200%%) ;
 -webkit-backdrop-filter: blur(25px) saturate(200%%);
  background-color: transparent;
- box-shadow:2px 2px 1px rgb(0 ,0 ,0 ,0.14);
+ box-shadow:1px 1px 1px rgb(0 ,0 ,0 ,0.14);
 /*filter: drop-shadow(1px 1px 1px #00000030);*/
+
 }}
 .{CssClass.Common_Shadow}{{
     box-shadow: 0px 0px 8px;
@@ -267,12 +288,12 @@ let commonStyle = $"""
 }}
 
 .{CssClass.Common_btn}:hover{{
-    background-color: rgba(248, 248, 248, 0.5);
+    background-image: linear-gradient(to top, #accbee40 0%%, #e7f0fd40 100%%);
     cursor:pointer;
 }}
 .{CssClass.Common_btn}:active{{
-    background-color: rgba(255,255,255, 0.7);
-    cursor:pointer;
+   background-image: linear-gradient(to top, #6a85b640 0%%, #bac8e040 100%%);
+   cursor:pointer;
 }}
 .{CssClass.AssistDot_self}{{
     
@@ -287,7 +308,7 @@ let commonStyle = $"""
 .{CssClass.Common_textArea}{{
 resize:none;
 outline:none;
-padding:0;
+padding:5px;
 background:transparent;
 border:0;
 }}

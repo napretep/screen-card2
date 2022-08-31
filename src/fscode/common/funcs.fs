@@ -1,5 +1,6 @@
 ﻿module app.common.funcs
 
+open System.Text.RegularExpressions
 open Feliz
 open Elmish.React
 open Elmish
@@ -16,6 +17,7 @@ open Fable.Core
 open Fable.Core.JS
 open Fetch
 open app.common.obj
+open app.common.styleSheet
 open FSharp.Collections
 
 [<Emit("new Date()")>]
@@ -191,9 +193,9 @@ type TabEventHandleWrapper =
     static member OnUpdate(f: 'a -> 'b -> 'c -> unit) = Action<_, _, _>(f)
 
 
-let AsStr  (li:obj seq) =
+let AsStr  (li:CssClass seq) =
         li|> Seq.map (fun e-> e.ToString())|> Seq.toList
-let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:obj seq) (children:ReactElement seq)= 
+let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:CssClass seq) (children:ReactElement seq)= 
     reactEl [
               prop.classes (AsStr classes)
               prop.children children
@@ -212,5 +214,6 @@ let fetchContent url (El:HTMLElement)=
 let newGuid() = Guid.NewGuid().ToString().Replace("-","")[0..15]
 
 let (==) (input:string list) (preset:string) =
-        input|>Seq.fold (fun sum next->Some next) None |>Option.defaultValue preset
+        input|>Seq.fold (fun sum ->Some) None |>Option.defaultValue preset
 
+let getFloat s = float (Regex("\d+").Match(s).Value)

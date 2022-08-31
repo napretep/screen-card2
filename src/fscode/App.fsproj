@@ -5,13 +5,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="typeProviders/Chrome.fs" />
+    <Compile Include="common\styleSheet.fs" />
     <Compile Include="common\constant.fs" />
     <Compile Include="common\obj.fs" />
     <Compile Include="common\funcs.fs" />
     <Compile Include="common\Deferred.fs" />
     <Compile Include="common\modifies.fs" />
     <Compile Include="common\cssClass.fs" />
-    <Compile Include="common\styleSheet.fs" />
+    
     <Compile Include="common\jsBind.fs" />
     <Compile Include="common\btns.fs" />
     <Compile Include="common\DSL.fs" />

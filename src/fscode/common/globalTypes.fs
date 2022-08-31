@@ -13,7 +13,7 @@ type ICore (view,Id) =
 
 // type ComponentCore = Card of Card.Core
 
-type DiffPoint = {//用于拖拽位置修正
+type MouseDomPoint = {//用于拖拽位置修正
   mousePoint:Geometry.pointF
   elementPoint:Geometry.pointF
 }
