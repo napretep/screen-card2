@@ -166,30 +166,30 @@ type Test =
         btn.onclick <- callback
         btn |> root.appendChild |> ignore
         ()
-
-type DataStorage =
-    static member read(?key: ResizeArray<string>) =
-        match key with
-        | Some v -> chromeStorage.local.get (v)
-        | _ -> chromeStorage.local.get ()
-
-    static member set key value = chromeStorage.local.set (kv key value)
-
-    static member del key = chromeStorage.local.remove key
-    
-    static member clear = chromeStorage.local.clear ()
-
-type Continuation =
-    static member test (?key, ?callback)=
-        let callback = defaultArg callback (fun e->window.alert e)
-        let key = defaultArg key "count"
-        DataStorage.read(ResizeArray[key]).``then``(fun e->
-        let mutable value =0
-        if e.[key].IsSome then
-            value <- unbox int e.[key].Value + 1
-        callback value
-        DataStorage.set key value
-    ) 
+//
+// type DataStorage =
+//     static member read(?key: ResizeArray<string>) =
+//         match key with
+//         | Some v -> chromeStorage.local.get (v)
+//         | _ -> chromeStorage.local.get ()
+//
+//     static member set key value = chromeStorage.local.set (kv key value)
+//
+//     static member del key = chromeStorage.local.remove key
+//     
+//     static member clear = chromeStorage.local.clear ()
+//
+// type Continuation =
+//     static member test (?key, ?callback)=
+//         let callback = defaultArg callback (fun e->window.alert e)
+//         let key = defaultArg key "count"
+//         DataStorage.read(ResizeArray[key]).``then``(fun e->
+//         let mutable value =0
+//         if e.[key].IsSome then
+//             value <- unbox int e.[key].Value + 1
+//         callback value
+//         DataStorage.set key value
+//     ) 
 
 type TabEventHandleWrapper =
     static member OnUpdate(f: 'a -> 'b -> 'c -> unit) = Action<_, _, _>(f)
@@ -245,3 +245,11 @@ type Rect with
 let displayNone (e:HTMLElement) = e.style.display <-"none"
     
 let displayNonNone (e:HTMLElement)= e.style.display <-""
+
+
+type Op_element =
+    static member addMask (E:HTMLElement) =
+        E.classList.add(Common_mask.S)
+    static member delMask (E:HTMLElement) =
+        E.classList.remove(Common_mask.S)
+    

@@ -286,14 +286,13 @@ let commonStyle = $"""
 	z-index:9999999;
 }}
 #{Common_baseRoot}{{
-	position:fixed;
+	position: absolute;
 	z-index:9999999;
 	top:0;
 	left:0;
 }}
 .{Common_mask}{{
 	position: fixed;
-    background: #caf0ff59;
     width: 100%%;
     height: 100%%;
     cursor: crosshair;

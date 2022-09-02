@@ -261,16 +261,12 @@ module Card =
     member val env = env
     member this.delFields (fields:Brick list) =
       let body = this.env.view.hashmap[Card_body.S]
-      let delDom fields= 
-        let nodes = 
-          fields |> List.map (fun (e:Brick)->
-            body.element.Value.removeChild e.element.Value            
-          )
+      let delDom fields=
+        fields |> List.map (fun (e:Brick)->e.element.Value.remove()) |> ignore
         fields
       let delBrick fields=
           fields |> List.map (fun (e:Brick)->
-             let indx = body.children |> List.findIndex (fun f->e.Id=f.Id)
-             body.children <- body.children |> List.removeAt indx
+             body.children <- body.children |> List.filter (fun f->e.Id<>f.Id)
           )|>ignore
           fields
       let delHashMap fields= 
@@ -454,9 +450,6 @@ module Card =
     addTxt.onclick<- fun e->
       
       let bricks = core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
-      let textarea = bricks[-1].element.Value:?>HTMLTextAreaElement
-      textarea.autofocus<-true
-
       core.op_view.scrollToBottom
       
       
@@ -470,6 +463,8 @@ module Card =
       let self = core.view.element.Value
       let oldSelfP = pointF.fromElement self
       let oldMouseP = pointF.fromMouseEvent e
+      Op_element.addMask  core.env.root
+      // core.env.root.classList.add(Common_mask.S)
       let mutable IsMoving = true
       let onMoveHandle = Handler<MouseEvent>(         
           fun sender e2->
@@ -483,16 +478,16 @@ module Card =
             if IsMoving then
               IsMoving<-false
               core.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
+              Op_element.delMask core.env.root
         )
       core.env.event.mouseMoving.Publish.AddHandler onMoveHandle
       core.env.event.mouseUp.Publish.AddHandler onBtnUpHandle
       ()
-      // core.event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
+      
     pin.onclick<- fun e->
-      core.event.Pin.Trigger(pointF.set e.clientX e.clientY)
-    // recordClose.onclick<- fun e->
-      // ()
-    
+      core.state.pinState<- core.state.pinState.Switch
+      core.op_view.AfterPinSwitch()
+      
     core.event.Close.Publish.Add <| fun e->
       env.root.removeChild core.view.element.Value |>ignore
     core.event.MoveBegin.Publish.Add <| fun e->
