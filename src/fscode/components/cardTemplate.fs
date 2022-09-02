@@ -1,17 +1,13 @@
 ﻿module app.components.cardTemplate
-open System
-open System.Diagnostics
 open System.Text.RegularExpressions
 open Fable.Core.JS
-open Feliz.DaisyUI
-open Feliz.style
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Control
-open app.common
 open app.common.globalTypes
 open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
+open app.common.storageTypes
 open app.common.styleSheet
 open app.common.DSL
 open Browser.Types
@@ -40,6 +36,11 @@ module Card =
       |PinAtPage -> PinAtScreen
       |PinAtScreen -> PinBetweenTabs
       |PinBetweenTabs -> PinAtPage
+    member this.getNumber =
+      match this with 
+      |PinAtPage -> 0
+      |PinAtScreen -> 1
+      |PinBetweenTabs -> 2
   end
   type FieldState={
     mutable expandState:ExpandState
@@ -47,14 +48,20 @@ module Card =
     mutable BeginMoveMouseAt:float
     mutable BeginMoveElementAt:float
     mutable url:string
+    mutable webScrollTo:pointF
     mutable createTime:float
     mutable editTime:float
     mutable Id:string
+    mutable content:string // 当 text时, 是textvalue, 当 是 image 时, 是dataURL
+    mutable kind:float // 0 表示 text, 1表示image 
   }
   with
-    static member init id=
+    static member init id content kind=
       let t= thisTime.valueOf()
       {
+        webScrollTo = pointF.zero
+        content=content
+        kind=kind
         expandState=Collapse
         IsMoving = false
         BeginMoveMouseAt= -1
@@ -64,6 +71,18 @@ module Card =
         url = window.location.href
         Id = id
       }
+    member this.Save:Save.CardField =
+      {
+        majorKind = SaveKind.CardField
+        contentKind = this.kind
+        content = this.content
+        url = this.url
+        webScrollTo = this.webScrollTo.toTuple
+        createTime=this.createTime
+        editTime =this.editTime
+        Id=this.Id
+      }
+    
   type FieldEvent={
     MoveBegin:Event<string*pointF> // string => Id of field pointF=>position mousedown
     FieldMoveEnd:Event<string*int> // string => Id of field int=> position to insert
@@ -91,6 +110,8 @@ module Card =
     mutable FieldIsMoving:bool
     mutable FieldBeginMoveMouseAt:float
     mutable FieldBeginMoveElementAt:float
+    mutable createTime:float
+    mutable editTime:float
   }
   with
     static member init =
@@ -107,6 +128,8 @@ module Card =
       FieldIsMoving = false 
       FieldBeginMoveMouseAt = -1 
       FieldBeginMoveElementAt = -1
+      createTime= -1 
+      editTime= -1
     }
   type Event' = {
     Close :Event<unit>
@@ -124,7 +147,7 @@ module Card =
   
   type CardFieldContent = |Text of string |Image of string
 
-    let cardField (content:CardFieldContent)=
+  let cardField (content:CardFieldContent)=
     Div [
       classes [CardField_self]
     ] [
@@ -149,7 +172,7 @@ module Card =
              ] []
       ]
     
-    ]
+  ]
 
   let testField() = cardField <| Text "123"
   let testField2() = cardField <| Image URL.logo
@@ -195,10 +218,35 @@ module Card =
     member val fieldState:Map<string,FieldState> =Map<string,FieldState>[] with get,set
     member val fieldEvent:Map<string,FieldEvent> =Map<string,FieldEvent>[] with get,set
     member val env = env with get,set
+    member val op_state  = Op_State(this)
     member val op_view:Op_View  = Op_View(this)
     member val op_field:Op_Field = Op_Field(this)
-  
-  and  Op_View (env:Core) as self=
+  and Op_State (env:Core)  =
+    member val env = env
+    member this.save:Save.Card =
+      let fieldsState = this.env.view.hashmap[Card_body.S].children
+                        |> List.map (fun (b:Brick)->this.env.fieldState[b.Id].Save)|>List.toArray
+      console.log fieldsState
+      let rect = Rect.fromElement this.env.view.element.Value
+      let state = this.env.state
+      let save:Save.Card  = 
+        {
+          Id=this.env.Id
+          majorKind = SaveKind.Card
+          createTime = state.createTime
+          editTime = state.editTime
+          fields = fieldsState
+          pin = float state.pinState.getNumber
+          position = rect.Point.toTuple
+          size = rect.Size.toTuple
+        }
+      console.log save
+      let cardlib:Save.CardLib = {
+        cards= [|save|]
+      }
+      DataStorage.set SaveKind.CardLib.S cardlib
+      save 
+  and  Op_View (env:Core) =
     member val env = env
     member this.Position (nowMouseAt:pointF) =
       
@@ -211,7 +259,7 @@ module Card =
       style.top <- $"{oldElem.top+nowMouseAt.top-oldMouse.top +  extraTop}px"
     
     member this.AfterPinSwitch () =
-      let Pin = env.view.hashmap.[Card_header_btn_pin.S].element.Value
+      let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
       let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
       let cliP = pointF.set (carrier.getBoundingClientRect().left) (carrier.getBoundingClientRect().top)
@@ -239,7 +287,7 @@ module Card =
       ()
     member this.positionFix (p:pointF) =
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
-      let Pin = env.view.hashmap.[Card_header_btn_pin.S].element.Value
+      let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
       let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
       let cliP = pointF.set (carrier.getBoundingClientRect().left) (carrier.getBoundingClientRect().top)
       let scrollP =pointF.set window.scrollX window.scrollY
@@ -286,7 +334,7 @@ module Card =
         e
         )
       let insertBrick fields=
-        body.children@fields |> ignore
+        body.children<-body.children@fields  
         fields
       let insertHashMap fields=
         fields |> List.iter (fun (e:Brick)->
@@ -295,13 +343,20 @@ module Card =
         fields
       fields |> insertDom |>insertBrick |>insertHashMap |> this.eventSubscribe
 
+    member this.makeBrickAndStateEvent (content:string) (kind:int) (id':string option)=
+      let brick = build (cardField (if kind=0 then Text content else Image content))
+      id' |> Option.iter (fun i ->
+          brick.Id<- i
+          brick.element.Value.id<- i
+        )
+      let state = FieldState.init brick.Id content (float kind)
+      this.env.fieldEvent<-this.env.fieldEvent.Add(brick.Id,FieldEvent.init)
+      this.env.fieldState<-this.env.fieldState.Add(brick.Id,state)
+      brick
     member this.addTextFields (txts:string list)=
-      txts |>List.map (fun (t:string)->
-        t|> Text |> cardField |> build  ) |> this.addFields
+      txts |>List.map (fun (t:string)-> this.makeBrickAndStateEvent t 0 None) |> this.addFields
     member this.addImgFields (imgs:string list)=
-      imgs |> List.map (fun (i:string)->
-        i|> Image |> cardField |> build 
-        )|> this.addFields
+      imgs |> List.map (fun (i:string)->this.makeBrickAndStateEvent i 1 None )|> this.addFields
     
     member this.updateIndexOfBodyChildren =
       let body = this.env.view.hashmap[Card_body.S]
@@ -333,7 +388,7 @@ module Card =
                        (e.id <> "placeHolder") && (e.id <> field.Id) 
           )
         
-        let moveBar = field.hashmap.[CardField_dragBar.S].element.Value
+        let moveBar = field.hashmap[CardField_dragBar.S].element.Value
         let event  = this.env.fieldEvent[field.Id]
         
         moveBar.onmousedown <- fun e->
@@ -404,10 +459,8 @@ module Card =
     member this.eventSubscribe (fields:Brick list) =
       let cardBody = this.env.view.hashmap.[Card_body.S]
       fields |> List.map (fun (field:Brick)->
-          let event = FieldEvent.init
-          let state = FieldState.init field.Id
-          this.env.fieldEvent<-this.env.fieldEvent.Add (field.Id, event)
-          this.env.fieldState<-this.env.fieldState.Add (field.Id, state)
+          let event = this.env.fieldEvent[field.Id]
+          let state = this.env.fieldState[field.Id]
           let del = field.hashmap.[CardField_btns_del.S].element.Value
           let expand = field.hashmap.[CardField_btns_expand.S].element.Value
           let link = field.hashmap.[CardField_btns_link.S].element.Value
@@ -438,20 +491,25 @@ module Card =
     
     console.log "hashmap"
     // console.log core.view.hashmap.[Card_header_btn_close.S]
-    let close =core.view.hashmap.[Card_header_btn_close.S].element.Value
-    let move = core.view.hashmap.[Card_header_btn_move.S].element.Value
-    let pin = core.view.hashmap.[Card_header_btn_pin.S].element.Value
-    let addTxt = core.view.hashmap.[Card_header_btn_addTxt.S].element.Value
+    let close =core.view.hashmap[Card_header_btn_close.S].element.Value
+    let move = core.view.hashmap[Card_header_btn_move.S].element.Value
+    let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
+    let addTxt = core.view.hashmap[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
-    let cardBody = core.view.hashmap.[Card_body.S]
+    let cardBody = core.view.hashmap[Card_body.S]
     let self = core.view.element.Value
-    self.onclick <- fun e-> core.env.state.setFocus self
+    self.onclick <- fun e->
+      core.env.state.setFocus self
+    self.onmouseup <- fun e->
+      JS.setTimeout (fun e->core.op_state.save |> ignore) 100
+      
+      ()
       
     addTxt.onclick<- fun e->
       
       let bricks = core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
       core.op_view.scrollToBottom
-      
+      let save = core.op_state.save
       
       ()
     addImg.onclick <- fun e-> env.event.screenCapBegin.Trigger(core.Id)
@@ -464,7 +522,6 @@ module Card =
       let oldSelfP = pointF.fromElement self
       let oldMouseP = pointF.fromMouseEvent e
       Op_element.addMask  core.env.root
-      // core.env.root.classList.add(Common_mask.S)
       let mutable IsMoving = true
       let onMoveHandle = Handler<MouseEvent>(         
           fun sender e2->

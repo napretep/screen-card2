@@ -5,6 +5,7 @@ open app.common
 open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
+open app.common.storageTypes
 open app.common.styleSheet
 open app.common.DSL
 open app.common.globalTypes
@@ -365,7 +366,7 @@ chromeRuntime.onMessage.addListener (
       displayNonNone (globalCore.state.FrameDiv)
       ()
     | ShowContent -> msg.content |> Pip.log
-    | Continuation -> Continuation.test ("count", Pip.log) |> ignore
+    // | Continuation -> Continuation.test ("count", Pip.log) |> ignore
     | _ -> msg |> Pip.log)
 )
 
@@ -376,8 +377,16 @@ globalCore.event.screenCapOk.Publish.Add (fun ()->
   let cardCore = globalCore.hashMap[card_id]:?>Card.Core
   cardCore.op_field.addImgFields [dataurl] |> ignore
   cardCore.op_view.scrollToBottom
+  cardCore.op_state.save
   ()
   )
 
 console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")
+
+
+DataStorage.read([|SaveKind.CardLib.S|])
+  .``then``(fun data->
+    console.log data[SaveKind.CardLib.S].Value
+    ()
+    )|>ignore

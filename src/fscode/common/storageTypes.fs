@@ -14,7 +14,6 @@ type [<StringEnum>] SaveKind =
   |CardField
   |CardLib
   |CommonState
-  |Id of string
   |Count
   with
     member this.S =  this.ToString()
@@ -25,12 +24,13 @@ let kv (k: string) v : obj = createObj [ $"{k}" ==> v ]
 //下面做的是一次性读取方案
 [<RequireQualifiedAccess>]
 module Save=
+
   type CardField ={
     majorKind:SaveKind
-    kind:CardFieldContentKind
+    contentKind:float // 0 text 1 image
+    content:string //如果是image, 则是dataurl
     url:string
     webScrollTo:float*float
-    content:string //如果是image, 则是dataurl
     createTime:float //时间戳
     editTime:float //时间戳
     Id :string  
@@ -43,32 +43,34 @@ module Save=
     createTime:float //时间戳
     editTime:float //时间戳
     fields:CardField array
-    pin:PinKind
+    pin:float // 0 page 1 screen 2 tab
     position:float*float //x,y
     size:float*float
   }
 
-  type CardLib = {
-    majorKind:SaveKind
-    Id:string
-    pin:PinKind
-    searchString:string
-    position:float*float //x,y
-    size:float*float
+  // type CardLib = {
+  //   majorKind:SaveKind
+  //   Id:string
+  //   pin:PinKind
+  //   searchString:string
+  //   position:float*float //x,y
+  //   size:float*float
+  //   cards:Card array
+  // }
+  // with
+  //   static member init =
+  //     {
+  //         majorKind=SaveKind.CardLib
+  //         Id=SaveKind.CardLib.S
+  //         pin=Page
+  //         searchString=""
+  //         position=(200,200) //x,y
+  //         size=(600,400)
+  //         cards=[||]
+  //     }
+  type CardLib ={
     cards:Card array
   }
-  with
-    static member init =
-      {
-          majorKind=SaveKind.CardLib
-          Id=SaveKind.CardLib.S
-          pin=Page
-          searchString=""
-          position=(200,200) //x,y
-          size=(600,400)
-          cards=[||]
-      }
-
   type CommonState={
     Id:SaveKind
     majorKind:SaveKind

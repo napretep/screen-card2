@@ -159,6 +159,8 @@ module Geometry =
             (r.left,r.top,r.right,r.bottom)
         member this.ToPx =
             ($"{this.left}px",$"{this.top}px")
+        member this.toTuple =
+            (this.left,this.top)
         static member (-) (a:pointF,b:pointF) =
             {
                 left = a.left-b.left
@@ -180,7 +182,7 @@ module Geometry =
         }
         static member from2Point (start:pointF) (end':pointF) =
             size2d.set (end'.left - start.left) (end'.top-start.top)
-
+        member this.toTuple = (this.width,this.height)
     
     type Rect ={
         top:float
