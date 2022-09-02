@@ -6,6 +6,7 @@ open Elmish.React
 open Elmish
 open System
 open Browser.Types
+open Browser
 open Browser.Dom
 open Browser.Css
 open Chrome
@@ -17,6 +18,7 @@ open Fable.Core
 open Fable.Core.JS
 open Fetch
 open app.common.obj
+open app.common.obj.Geometry
 open app.common.styleSheet
 open FSharp.Collections
 
@@ -217,3 +219,29 @@ let (==) (input:string list) (preset:string) =
         input|>Seq.fold (fun sum ->Some) None |>Option.defaultValue preset
 
 let getFloat s = float (Regex("\d+").Match(s).Value)
+
+type pointF with
+    static member fromElement (el:HTMLElement)=
+            {left=getFloat el.style.left;top = getFloat el.style.top}
+    static member fromMouseEvent (e:MouseEvent) =
+            pointF.set e.clientX e.clientY
+    static member setElementPosition (el:HTMLElement) (p:pointF)= 
+        el.style.left <- $"{p.left}px"
+        el.style.top <- $"{p.top}px"
+    static member zero = pointF.set 0 0
+    
+type size2d with
+    static member setElementSize  (el:HTMLElement) (size:size2d)=
+        el.style.width <- $"{size.width}px"
+        el.style.height <- $"{size.height}px"
+    static member zero = {width=0;height=0}
+    
+type Rect with
+    static member setElementGeometry  (e:HTMLElement) (rect:Rect) =
+        pointF.setElementPosition e rect.Point
+        size2d.setElementSize e rect.Size
+    static member zero = Rect.fromPoint_Size pointF.zero size2d.zero
+    
+let displayNone (e:HTMLElement) = e.style.display <-"none"
+    
+let displayNonNone (e:HTMLElement)= e.style.display <-""

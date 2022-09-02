@@ -1,7 +1,9 @@
 ﻿module app.common.obj
 open System.Collections.Generic
+open Browser.Types
 open Fable.Core
 open Chrome
+open Feliz.style
 
 
 // type jsNumber = |Int of int |Float of float
@@ -17,9 +19,9 @@ open Chrome
 type TestButton = Browser.Types.HTMLElement * string * (obj -> unit)
 let [<Global("chrome.runtime")>] chromeRuntime:Chrome.Runtime.IExports = jsNative
 let [<Global("chrome.tabs")>] chromeTabs:Chrome.Tabs.IExports = jsNative
-
+let [<Global("chrome.windows")>] chromeWindows:Chrome.Windows.IExports = jsNative
 let [<Global("chrome.extension")>] chromeExtension:Chrome.Extension.IExports = jsNative
-
+let [<Global("chrome.action")>] chromeAction:Chrome.Action.IExports = jsNative
 let [<Global("chrome.storage")>] chromeStorage:Chrome.Storage.IExports = jsNative
 module TabInfo =
     type tabId = float
@@ -27,7 +29,7 @@ type runtimeState = unit
 type storage = Dictionary<string,obj>
 type [<StringEnum>] RuntimeMsgActor = |Tab|Popup|Backend
 type [<StringEnum>] RuntimeMsgFormat = |Standard|Other
-type [<StringEnum>] RuntimeMsgPurpose = |ShowContent|Continuation|GetStorage|TabLoaded|Call|Other
+type [<StringEnum>] RuntimeMsgPurpose = |ShowContent|Continuation|GetStorage|TabLoaded|Call|Other|ScreenCapRequest|ScreenCapOK|ScreenCapNo
 type RuntimeMsg = 
      { purpose:RuntimeMsgPurpose option
        callback :(obj->unit) option
@@ -142,27 +144,19 @@ module ICON =
 <?xml version="1.0" encoding="UTF-8"?><svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 11L4 24L14 37H44V11H14Z" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 19L31 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 19L21 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
 """
 module Geometry =
-    type Rect ={
-        top:float
-        left:float
-        width:float
-        height:float
-    }
-    with
-        static member set x y w h =
-            {
-                top = x
-                left = y
-                width = w
-                height = h
-            }
+
+
     type pointF={
         left:float
         top:float 
     }
     with
+        
         static member set left top =
             {left=left;top=top}
+        static member getElement_TL_BR_as4Tuple (e:HTMLElement) =
+            let r = e.getBoundingClientRect()
+            (r.left,r.top,r.right,r.bottom)
         member this.ToPx =
             ($"{this.left}px",$"{this.top}px")
         static member (-) (a:pointF,b:pointF) =
@@ -175,4 +169,39 @@ module Geometry =
                 left = a.left+b.left
                 top = a.top+b.top
             }    
-    pointF.set 1 2     
+    type size2d ={
+        width:float
+        height:float
+    }
+    with
+        static member set w h = {
+            width = w
+            height = h
+        }
+        static member from2Point (start:pointF) (end':pointF) =
+            size2d.set (end'.left - start.left) (end'.top-start.top)
+
+    
+    type Rect ={
+        top:float
+        left:float
+        width:float
+        height:float
+    }
+    with
+        static member set x y w h =
+            {
+                left = x
+                top = y
+                width = w
+                height = h
+            }
+        static member fromPoint_Size (p:pointF) (s:size2d) =
+            Rect.set p.left p.top s.width s.height
+        static member fromElement (e:HTMLElement) =
+            let r = e.getBoundingClientRect()
+            Rect.set r.left r.top r.width r.height
+        member this.Point = pointF.set this.left this.top
+        member this.Size = size2d.set this.width this.height
+        
+        

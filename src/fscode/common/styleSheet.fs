@@ -4,9 +4,14 @@ open Fable.Core
 
 // [<RequireQualifiedAccess>]
 type [<StringEnum>] CssClass =
+    |Common_invisible
+    |Common_mask
+    |Common_baseRoot
+    |Common_zindexFocus
     |Common_Shadow
     |Common_backdropBlur
     |Common_fixed
+    |Common_fullscreen
     |Common_absolute
     |Common_glass
     |Common_component
@@ -53,7 +58,13 @@ type [<StringEnum>] CssClass =
     |CardField_btns_expand
     |CardField_expanded
     |CardField_btns_del
-    
+    |CapturingFrame_carrier
+    |CapturingFrame_self
+    |CapturingFrame_dragBar
+    |CapturingFrame_btns
+    |CapturingFrame_btns_no
+    |CapturingFrame_btns_ok
+    |ScreenCapCanvas
     with
         member this.S = this.ToString()
     end
@@ -88,6 +99,33 @@ let hideScrollBar selector = $"""
 type Str =
     |String of string
     |CssClass of CssClass
+let btnSize = 20
+let capturingFrameStyle = $"""
+#{ScreenCapCanvas}{{
+
+}}
+#{CapturingFrame_dragBar}{{
+	
+}}
+#{CapturingFrame_carrier}{{
+	position:fixed;
+	display:flex;
+	flex-direction:column;
+}}
+#{CapturingFrame_self}{{
+	min-height:30px;
+	min-width:60px;
+	border: dashed #53535340;
+	resize: both;
+	overflow: hidden;
+}}
+#{CapturingFrame_btns}{{
+	display:flex;
+	justify-content: center;
+}}
+
+
+"""
 
 let cardStyle = $"""
 #{Card_carrier}{{
@@ -244,6 +282,22 @@ flex-grow:1;
 """
 
 let commonStyle = $"""
+.{Common_zindexFocus}{{
+	z-index:9999999;
+}}
+#{Common_baseRoot}{{
+	position:fixed;
+	z-index:9999999;
+	top:0;
+	left:0;
+}}
+.{Common_mask}{{
+	position: fixed;
+    background: #caf0ff59;
+    width: 100%%;
+    height: 100%%;
+    cursor: crosshair;
+}}
 svg{{
 padding:4px;
 }}
@@ -270,7 +324,6 @@ padding:4px;
 .{CssClass.Common_component}{{
     position:fixed;
     background-color:#ffffff30;
-    z-index : 999999;
     /*background-image: linear-gradient(180deg, #2af59820 0%%, #009efd20 100%%);
     background: linear-gradient(to bottom, #D5DEE7 0%%, #E8EBF2 50%%, #E2E7ED 100%%), linear-gradient(to bottom, rgba(0,0,0,0.02) 50%%, rgba(255,255,255,0.02) 61%%, rgba(0,0,0,0.02) 73%%), linear-gradient(33deg, rgba(255,255,255,0.20) 0%%, rgba(0,0,0,0.20) 100%%); background-blend-mode: normal,color-burn;*/
     
@@ -283,8 +336,8 @@ padding:4px;
     display:flex;
     align-items:center;
     justify-content:center;
-    width:20px;
-    height:20px;
+    width:{btnSize}px;
+    height:{btnSize}px;
 }}
 
 .{CssClass.Common_btn}:hover{{
@@ -304,7 +357,9 @@ padding:4px;
 .{CssClass.Common_displayNone}{{
     display:none;
 }}
-
+.{Common_invisible}{{
+	
+}}
 .{CssClass.Common_textArea}{{
 resize:none;
 outline:none;
@@ -326,7 +381,7 @@ align-items: center;
 
 """
 
-let CSSInjection = commonStyle+cardLibStyle+cardStyle
+let CSSInjection = commonStyle+cardLibStyle+cardStyle+ capturingFrameStyle
 
 (*
 linear-gradient(217deg, rgba(255,0,0,.1), rgba(255,0,0,0) 70.71%),      linear-gradient(127deg, rgba(0,255,0,.1), rgba(0,255,0,0) 70.71%),      linear-gradient(336deg, rgba(0,0,255,.1), rgba(0,0,255,0) 70.71%)

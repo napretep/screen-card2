@@ -5,6 +5,7 @@ open app.common.funcs
 open app.common.obj.Geometry
 open app.common.styleSheet
 open app.common.DSL
+open app.common.globalTypes
 open Browser.Types
 open Browser
 open Fable.Core
@@ -12,8 +13,13 @@ open FSharp.Control
 
 module CardLib =
   type [<StringEnum>]  Msg = |None|Close
-  module Event =
-    let Close =  Event<unit>()
+  type Event =
+    {Close : Event<unit>}
+    with
+     static member init =
+       {
+        Close =  Event<unit>()
+        }
   type State={
     mutable IsShow:bool 
     mutable rect:Rect
@@ -39,7 +45,7 @@ module CardLib =
   ]
   let testCard = cardItem "https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" "1231231231 aa a a a a a"
   let atom =
-    Div [ Classes << AsStr <| [ CssClass.Common_component;CssClass.Common_displayNone]
+    Div [ classes  [ Common_component]
           CSSPosition ("100px","400px")
           Id CssClass.CardLib_carrier
     ] [
@@ -81,5 +87,30 @@ module CardLib =
   let view = build atom
   
   module method =
-    let hide () = view.element.Value.classList.add CssClass.Common_displayNone.S
-    let show () = view.element.Value.classList.remove CssClass.Common_displayNone.S
+    let hide () = view.element.Value.remove()
+    let show () =  view.element.Value
+    
+  type Core(env:GlobalCore,view:Brick,Id:string) as this=
+    inherit ICore(view,Id)
+    member val env=env
+    member val state = state with get,set
+    member val event = Event.init with get,set
+    member val op_view = Op_View(this)
+  and Op_View (env:Core) =
+    member val env=env
+    member this.show = env.env.root.appendChild this.env.view.element.Value|>ignore
+    member this.hide = this.env.view.element.Value.remove()
+  
+  let Init (env:GlobalCore) (p:pointF) =
+    let core = Core(
+      env = env,
+      view = view,
+      Id=CardLib_self.S
+      )
+    pointF.setElementPosition view.element.Value p
+    view.element.Value.onclick<- fun e->
+      env.state.setFocus view.element.Value
+      ()
+    env.addMember core
+    core.op_view.hide
+    core

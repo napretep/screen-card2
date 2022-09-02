@@ -1,36 +1,22 @@
 module content
 open Microsoft.FSharp.Collections
+open Microsoft.FSharp.Control
 open app.common
 open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
 open app.common.styleSheet
 open app.common.DSL
-open app.common.eventtypes
+open app.common.globalTypes
 open app.components
+open Fable.Core
+open Fable.Core.JsInterop
 open Browser.Types
 open Browser
-open Fable.Core
 open FSharp.Core
 open FSharp.Control
 open app.components.cardLibrary
 open app.components.cardTemplate
-
-// type _ExtensionMessageEvent = (obj option *  MessageSender *  (obj -> unit)) -> unit
-
-
-// let globalEvent = {
-//   mouseMoving=Event<MouseEvent>()
-//   mouseUp = Event<MouseEvent>()
-// }
-
-let x:HTMLElement = document.createElement "div"
-x.style
-let MsgToBackend msg =
-  ChromeMsg.ToBackEnd RuntimeMsgActor.Tab msg
-
-let MsgToPopup msg =
-  ChromeMsg.ToPopup RuntimeMsgActor.Tab msg
 
 let MsgReceivedCallback callback =
   ChromeMsg.ReceivedCallback RuntimeMsgActor.Tab callback
@@ -38,18 +24,11 @@ let MsgReceivedCallback callback =
 let MsgToBackendHeader =
   { RuntimeMsgHeader.backendAsReceiver with sender = RuntimeMsgActor.Tab }
 
-chromeRuntime.onMessage.addListener (
-  MsgReceivedCallback (fun msg ->
-    match msg.purpose with
-    | ShowContent -> msg.content |> Pip.log
-    | Continuation -> Continuation.test ("count", Pip.log) |> ignore
-    | _ -> msg |> Pip.log)
-)
 
 
 let Host = document.createElement "div"
 Host.id <- "Screen.Card-wrapper"
-
+Host.style.zIndex <- "999999"
 
 document.body.appendChild Host |> ignore
 
@@ -57,12 +36,14 @@ document.body.appendChild Host |> ignore
 let shadowRootInit: ShadowRootInit =
   jsNative
 
-let root =
-  Host.attachShadow (shadowRootInit)
+let root =Host.attachShadow (shadowRootInit)
+  
 
-let baseElem = document.createElement "div"
-baseElem.id <- "baseRoot"
-
+let baseBrick = build (Div [
+  Id Common_baseRoot
+] []
+)
+let baseElem = baseBrick.element.Value
 let CommonStyleEl =
   document.createElement "style"
 
@@ -90,6 +71,8 @@ module AssistDot =
     let Close = Event<unit>()
     let OpenCardLib = Event<unit>()
     let CreateCard = Event<unit>()
+    let ScreenCapBegin = Event<unit>()
+
   module Subscribe =
     let MoveBegin = Event.MoveBegin.Publish
     let MoveEnd = Event.MoveEnd.Publish
@@ -167,41 +150,168 @@ module AssistDot =
     state.IsClosed<-true
     view.element.Value.style.display<-"none"
 
-
+CardLib.Core
 let globalCore ={
   event=GlobalEvent.init
   root = baseElem
   hashMap = Map<string,ICore>[]
+  state = GlobalState.init
 }
+
+globalCore.state.FrameDiv.onclick <- fun e->(
+  globalCore.state.setFocus globalCore.state.FrameDiv
+  ()
+  )
+//初始化 capturing frame的移动事件, 全部写在一个函数内
+let capturingFrameDragBar = globalCore.state.FrameDiv.children[2]:?>HTMLElement
+capturingFrameDragBar.onmousedown<-fun e->
+  let carrier = globalCore.state.FrameDiv
+  let oldMouseP = pointF.fromMouseEvent e
+  let oldCarrierP = pointF.fromElement carrier
+  let mouseMoveEvent = globalCore.event.mouseMoving
+  let mouseUpEvent = globalCore.event.mouseUp
+  let mutable IsMoving = true
+  let mutable OnDragBarMouseMove = Handler<MouseEvent> (
+    fun sender e2 ->
+      if IsMoving && e2.buttons=1 then 
+        let newMouseP = pointF.fromMouseEvent e2
+        pointF.setElementPosition carrier (oldCarrierP+(newMouseP-oldMouseP))
+      ()
+    )
+  let mutable OnDragBarMouseUp =  Handler<MouseEvent> (
+    fun sender e3 ->
+      IsMoving <- false
+      mouseMoveEvent.Publish.RemoveHandler OnDragBarMouseMove
+      
+      ()
+    )
+  mouseMoveEvent.Publish.AddHandler OnDragBarMouseMove
+  mouseUpEvent.Publish.AddHandler OnDragBarMouseUp
+  ()
+
+let closeCapFrame ()= 
+  size2d.setElementSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
+  let u = globalCore.state.FrameDiv.children[0]:?>HTMLElement
+  for i=0 to u.children.length-1 do u.children[i].remove()
+  globalCore.state.FrameDiv.remove()
+let CapFrameCancelBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_no}" :?>HTMLElement
+CapFrameCancelBtn.onclick <- fun e-> closeCapFrame()
+
+let CapFrameAcceptBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_ok}":?>HTMLElement
+CapFrameAcceptBtn.onclick <- fun e->
+  globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
+  displayNone globalCore.state.FrameDiv
+  JS.setTimeout (fun ()->
+     chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
+     ()
+   ) 20|>ignore
+  ()
+globalCore.event.screenCapOk.Publish.Add(fun ()->
+  console.log "screenshot ok!" |>ignore
+  // closeCapFrame()
+  ()
+) 
+
+let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
+  if globalCore.state.IsFrameDrawing && e.buttons=1 then
+    
+    let el_carrier = globalCore.state.FrameDiv
+    let el_self = el_carrier.children[0]:?>HTMLElement
+    let oldP = pointF.fromElement el_carrier
+    let newP = pointF.set e.clientX e.clientY
+    let size = size2d.from2Point oldP newP
+    let newSize = {
+                   width = if size.width>0 then size.width else  0
+                   height =if size.height>0 then size.height else  0
+                   }
+    size2d.setElementSize el_self newSize
+    console.log (pointF.set e.clientX e.clientY)
+  ()
+  )
+
+let mutable DrawingCapFrameOnMouseDown =Handler<MouseEvent> ( fun sender e ->
+  let root = globalCore.root
+  globalCore.state.FrameDrawStartAt<- pointF.set e.clientX e.clientY
+  globalCore.state.IsFrameDrawing<- true
+  let frame = (root.appendChild globalCore.state.FrameDiv ):?> HTMLElement 
+  globalCore.state.setFocus frame
+  pointF.setElementPosition frame (pointF.set e.clientX e.clientY)
+  
+  globalCore.event.mouseMoving.Publish.AddHandler DrawingCapFrameOnMouseMove
+  console.log "drawing begin"
+  ()
+  )
+let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
+  if globalCore.state.IsFrameDrawing then
+    globalCore.state.IsFrameDrawing<-false
+    let root = globalCore.root
+    // root.removeChild globalCore.state.FrameDiv  |> ignore
+    let btns = globalCore.state.FrameDiv.children[1]:?>HTMLElement
+    btns.classList.remove Common_displayNone.S |> ignore
+    globalCore.state.FrameDiv.children[2].classList.remove Common_displayNone.S |> ignore
+    let kids = globalCore.root.children
+    for i=0 to  kids.length-1 do
+      let kid = kids[i]
+      kid.classList.remove Common_displayNone.S
+      ()
+    root.classList.remove Common_mask.S
+    
+    
+    globalCore.event.mouseMoving.Publish.RemoveHandler DrawingCapFrameOnMouseMove
+    globalCore.event.mouseDown.Publish.RemoveHandler DrawingCapFrameOnMouseDown
+    
+    console.log "drawing stop"
+  ()
+  )
+
+
+globalCore.event.screenCapBegin.Publish.Add (fun card_id->
+    console.log "ready for drawing"
+    globalCore.state.ScreenCapCardId<- Some card_id
+    let root = globalCore.root
+    let kids = globalCore.root.children
+    //隐藏全部元素
+    for i=0 to  kids.length-1 do
+      let kid = kids[i]
+      kid.classList.add Common_displayNone.S
+      ()
+    closeCapFrame()
+    
+    //添加遮罩
+    root.classList.add Common_mask.S
+
+    globalCore.event.mouseDown.Publish.AddHandler DrawingCapFrameOnMouseDown
+    globalCore.event.mouseUp.Publish.AddHandler DrawingCapFrameOnMouseUp
+
+    ()
+  )
 
 
 
 baseElem.appendChild AssistDot.view.element.Value |> ignore 
-baseElem.appendChild CardLib.view.element.Value |> ignore
-// baseElem.appendChild card.element.Value |> ignore
+
+
+let cardLib = CardLib.Init globalCore (pointF.set 200 200)
 
 AssistDot.Subscribe.OpenCardLib.Add (fun ()->
   console.log "opencardlib"
-  if CardLib.state.IsShow then
-    CardLib.state.IsShow<-false
-    CardLib.method.hide()
+  if cardLib.state.IsShow then
+    cardLib.state.IsShow<-false
+    cardLib.op_view.hide
   else
-    CardLib.state.IsShow<-true
-    CardLib.method.show()
+    cardLib.state.IsShow<-true
+    cardLib.op_view.show
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
   let newCard = Card.Init globalCore (pointF.set 200 200)
   ()
 )
-// let newCard = Card.Init globalCore (pointF.set 100 200)
-// console.log  newCard.view.element.Value
+
 window.onmousemove <- fun e->
   globalCore.event.mouseMoving.Trigger(e)
   match AssistDot.state.MoveBegin with 
   |true -> AssistDot.EventHandler.WatchMouseMove e
   |_ ->()
-  // if newCard.state.IsMoving then
-  //   Card.method.updatePosition newCard (pointF.set e.clientX e.clientY)
 
 window.onmouseup <- fun e->
   globalCore.event.mouseUp.Trigger(e)
@@ -210,11 +320,64 @@ window.onmouseup <- fun e->
     AssistDot.state.MoveBegin<-false 
   |_ -> ()
 
+window.onmousedown <- fun e->
+  globalCore.event.mouseDown.Trigger(e)
+  ()
+
+let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMsgActor.Tab}
+chromeRuntime.onMessage.addListener (
+  MsgReceivedCallback (fun msg ->
+    match msg.purpose with
+    | ScreenCapOK ->
+      
+      let frame =globalCore.state.FrameDiv
+      frame.remove()
+      displayNonNone frame
+      let el = build (Img [ ] [ ])
+      let img = el.element.Value:?>HTMLImageElement
+      // window.setTimeout()
+      
+      let job() = 
+        let canvas = document.createElement "canvas":?>HTMLCanvasElement //globalCore.state.FrameDiv.children[0]:?>HTMLCanvasElement
+        // let canvas =  globalCore.state.ScreenCapCanvas
+        let r = globalCore.state.FrameRect
+        canvas.width <- r.width
+        canvas.height <- r.height
+        let context = canvas.getContext_2d()
+        console.log(r)
+        context.drawImage(U3.Case1 img,
+                          r.left,r.top,r.width,r.height,0,0,r.width,r.height)
+        context.clip()
+        globalCore.state.ScreenCapDataUrl <- canvas.toDataURL()
+        globalCore.event.screenCapOk.Trigger()
+        // let el2 = build (Img [ Src (canvas.toDataURL()) ] [  ])
+        // frame.appendChild el2.element.Value
+        ()
+        // displayNonNone (globalCore.state.FrameDiv)
+        
+      // document.body.appendChild img
+      img.src<- (msg.content:?>string)
+      Fable.Core.JS.setTimeout job 30
+      
+      ()        
+    | ScreenCapNo ->
+      window.confirm "截屏失败, 请点击插件的图标来激活截屏权限, 然后再试一次"
+      displayNonNone (globalCore.state.FrameDiv)
+      ()
+    | ShowContent -> msg.content |> Pip.log
+    | Continuation -> Continuation.test ("count", Pip.log) |> ignore
+    | _ -> msg |> Pip.log)
+)
 
 
-
-
-
+globalCore.event.screenCapOk.Publish.Add (fun ()->
+  let card_id = globalCore.state.ScreenCapCardId.Value
+  let dataurl = globalCore.state.ScreenCapDataUrl
+  let cardCore = globalCore.hashMap[card_id]:?>Card.Core
+  cardCore.op_field.addImgFields [dataurl] |> ignore
+  cardCore.op_view.scrollToBottom
+  ()
+  )
 
 console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")

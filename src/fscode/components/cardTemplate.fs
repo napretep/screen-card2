@@ -3,11 +3,12 @@ open System
 open System.Diagnostics
 open System.Text.RegularExpressions
 open Fable.Core.JS
+open Feliz.DaisyUI
 open Feliz.style
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Control
 open app.common
-open app.common.eventtypes
+open app.common.globalTypes
 open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
@@ -123,6 +124,70 @@ module Card =
   
   type CardFieldContent = |Text of string |Image of string
 
+    let cardField (content:CardFieldContent)=
+    Div [
+      classes [CardField_self]
+    ] [
+      Div [classes [Common_glass;Common_btn];Id CardField_dragBar
+           InnerHtml <| ICON.VerticalMoveBar [] 
+           ] []
+      Div [classes [Common_glass];Id CardField_content] [
+        match content with
+        |Text s -> TextArea [classes [Common_textArea;Common_glass];Id CardField_content_text
+                             TextAreaValue s ] []
+        |Image s-> Img  [Src s;Id CardField_content_img
+                         ] []
+      ]
+      Div [classes [Common_glass;];Id CardField_btns] [
+        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_link 
+             InnerHtml <| ICON.link 
+             ] []
+        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_expand
+             InnerHtml <| ICON.expand] []
+        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
+             InnerHtml <| ICON.del 
+             ] []
+      ]
+    
+    ]
+
+  let testField() = cardField <| Text "123"
+  let testField2() = cardField <| Image URL.logo
+  let atom (point:pointF) =
+    Div [
+      classes [Common_component;Common_glass]; Id Card_carrier
+      CSSPosition point.ToPx
+    ] [
+
+      Div [ classes [Common_glass;];Id Card_self ] [
+        Div [ classes [Common_glass];Id Card_header ] [
+          Div [classes [Common_glass;Card_header_side_btn];Id Card_header_left_btn] [
+            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addImg
+                  InnerHtml <| ICON.newClip []
+                  ] []
+            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
+                  InnerHtml <| ICON.newText []
+                  ] []
+          ]
+          Span [classes [Common_moveBar;Common_glass;Common_btn]
+                Id Card_header_btn_move ; InnerHtml <| ICON.HorizontalMoveBar []] []
+          Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
+                Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin [] ] []
+                Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.close [] ] []
+          ]
+        
+        
+        ]
+        Div [Id Card_body] [
+
+        
+      ]
+      ]
+      
+    ]
+  
+  
+  
   type Core(env:GlobalCore,view:Brick,Id:string) as this=
     inherit ICore(view,Id)
     member val event = Event'.init with get,set
@@ -145,7 +210,7 @@ module Card =
       style.left <- $"{oldElem.left+nowMouseAt.left-oldMouse.left + extraLeft}px"
       style.top <- $"{oldElem.top+nowMouseAt.top-oldMouse.top +  extraTop}px"
     
-    member this.PinSwitch () =
+    member this.AfterPinSwitch () =
       let Pin = env.view.hashmap.[Card_header_btn_pin.S].element.Value
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
       let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
@@ -168,11 +233,20 @@ module Card =
       |PinBetweenTabs ->
         Pin.style.background<-"#7e7"
         
-    
+    member this.scrollToBottom =
+      let body = this.env.view.hashmap[Card_body.S].element.Value
+      body.scrollTo(0,body.scrollHeight-body.clientHeight)
+      ()
     member this.positionFix (p:pointF) =
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
+      let Pin = env.view.hashmap.[Card_header_btn_pin.S].element.Value
+      let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
+      let cliP = pointF.set (carrier.getBoundingClientRect().left) (carrier.getBoundingClientRect().top)
+      let scrollP =pointF.set window.scrollX window.scrollY
       match this.env.state.pinState with
       |PinAtPage ->
+        let newp = p + scrollP
+        pointF.setElementPosition carrier newp
         carrier.style.position <- "absolute"
         
       |PinAtScreen->
@@ -224,53 +298,15 @@ module Card =
           )
         fields
       fields |> insertDom |>insertBrick |>insertHashMap |> this.eventSubscribe
+
+    member this.addTextFields (txts:string list)=
+      txts |>List.map (fun (t:string)->
+        t|> Text |> cardField |> build  ) |> this.addFields
+    member this.addImgFields (imgs:string list)=
+      imgs |> List.map (fun (i:string)->
+        i|> Image |> cardField |> build 
+        )|> this.addFields
     
-    //当与容器的上下边缘贴近得足够小, 而且滚动条还有向上或向下滚动空间时,就滚过去.
-    // 由于, moving事件可能不会触发, 鼠标悬停在指定位置, 这时候要考虑一个延迟递归的方式去滚动.
-    // member this.ifNeedScroll (Y:float)=
-    //   let body = this.env.view.hashmap[Card_body.S].element.Value
-    //   let bodyTop = body.getBoundingClientRect().top
-    //   let bodyBottom = body.getBoundingClientRect().bottom
-    //   if (bodyTop<Y && Y-bodyTop<30 && body.scrollTop>0) then
-    //     body.scrollTo(0,body.scrollTop-1.0)
-    //     if Math.abs(Y- this.lastY)<3 then 
-    //       let job =async{
-    //         do! Async.Sleep 20
-    //         this.ifNeedScroll this.lastY
-    //       }
-    //       Async.StartImmediate job
-    //   if (bodyBottom>Y && bodyBottom-Y<30 && body.scrollHeight-body.scrollTop - body.clientHeight>0) then
-    //     body.scrollTo(0,body.scrollTop+1.0)
-    //     if Math.abs(Y- this.lastY)<3 then 
-    //       let job =async{
-    //         do! Async.Sleep 20
-    //         this.ifNeedScroll this.lastY
-    //       }
-    //       Async.StartImmediate job
-    //   ()
-    // member this.initMove (fieldId:string) =
-    //   let field = this.env.view.hashmap.[fieldId].element.Value
-    //   let fieldState = this.env.fieldState.[fieldId]
-    //   let offsetTop = field.offsetTop
-    //   let marginTop = (window.getComputedStyle field).marginTop
-    //   let scrollTop = field.parentElement.scrollTop
-    //   let top = $"calc({offsetTop}px - {marginTop} - {scrollTop}px)"
-    //   
-    //   field.style.top <- top
-    //   let top = float (Regex("\d+").Matches field.style.top).[0].Value
-    //   fieldState.BeginMoveElementAt<- top
-    //   field.insertAdjacentElement("afterend",this.env.state.PlaceHolder)|> ignore
-    //   field.style.position<- "absolute"
-    //   field.style.zIndex <- "9999"
-    //   
-    // member this.moveTo (fieldId:string) (newY:float)=
-    //   let fieldState = this.env.fieldState.[fieldId]
-    //   let field = this.env.view.hashmap.[fieldId].element.Value
-    //   let oldY = fieldState.BeginMoveMouseAt
-    //   let top = fieldState.BeginMoveElementAt
-    //   field.style.top <- $"{top+(newY-oldY)}px"
-    
-    //放置后, 需要更新对应的 kids list 中的索引位置, 在占位div更新位置后使用
     member this.updateIndexOfBodyChildren =
       let body = this.env.view.hashmap[Card_body.S]
       let kids = body.element.Value.children
@@ -281,36 +317,7 @@ module Card =
           aIdx - bIdx
         )
       ()  
-    
 
-    //   
-    // //用于更新field拖拽时, 产生的虚拟占位元素所占据的位置, 鼠标越过中线则交换位置
-    // member this.updatePlaceHolder (id:string)=
-    //   let field = this.env.view.hashmap[id].element.Value
-    //   let fTop = field.getBoundingClientRect().top
-    //   let fBottom = field.getBoundingClientRect().bottom
-    //   let placeHolder = this.env.state.PlaceHolder
-    //   this.env.state.DumbList |> List.map(fun (e:HTMLElement)->
-    //       let eTop = e.getBoundingClientRect().top
-    //       let eBottom = e.getBoundingClientRect().bottom
-    //       let eMid = (eTop+eBottom)/2.0
-    //       if fTop<eMid && fBottom>eBottom then
-    //         e.insertAdjacentElement("beforebegin",placeHolder)|> ignore
-    //       if fBottom>eMid && fTop < eTop then
-    //         e.insertAdjacentElement("afterend",placeHolder) |> ignore
-    //       e
-    //     ) |>ignore
-    //   
-    //   ()
-    //     
-    //   
-    // member this.resetElement (id:string) =
-    //   let field = this.env.view.hashmap[id].element.Value
-    //   let body = this.env.view.hashmap[Card_body.S].element.Value
-    //   body.replaceChild(field,this.env.state.PlaceHolder)
-    //   field.style.position <- ""
-    //   field.style.zIndex <- ""
-    //   ()
     member this.dragEvent (fields:Brick list) =
       let div = document.createElement "div"
       div.classList.add CardField_self.S
@@ -421,67 +428,7 @@ module Card =
         )|> this.dragEvent
 
       
-  let cardField (content:CardFieldContent)=
-    Div [
-      classes [CardField_self]
-    ] [
-      Div [classes [Common_glass;Common_btn];Id CardField_dragBar
-           InnerHtml <| ICON.VerticalMoveBar [] 
-           ] []
-      Div [classes [Common_glass];Id CardField_content] [
-        match content with
-        |Text s -> TextArea [classes [Common_textArea;Common_glass];Id CardField_content_text
-                             TextAreaValue s ] []
-        |Image s-> Img  [Src s;Id CardField_content_img
-                         ] []
-      ]
-      Div [classes [Common_glass;];Id CardField_btns] [
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_link 
-             InnerHtml <| ICON.link 
-             ] []
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_expand
-             InnerHtml <| ICON.expand] []
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
-             InnerHtml <| ICON.del 
-             ] []
-      ]
-    
-    ]
 
-  let testField() = cardField <| Text "123"
-  let testField2() = cardField <| Image URL.logo
-  let atom (point:pointF) =
-    Div [
-      classes [Common_component;Common_glass]; Id Card_carrier
-      CSSPosition point.ToPx
-    ] [
-
-      Div [ classes [Common_glass;];Id Card_self ] [
-        Div [ classes [Common_glass];Id Card_header ] [
-          Div [classes [Common_glass;Card_header_side_btn];Id Card_header_left_btn] [
-            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addImg
-                  InnerHtml <| ICON.newClip []
-                  ] []
-            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
-                  InnerHtml <| ICON.newText []
-                  ] []
-          ]
-          Span [classes [Common_moveBar;Common_glass;Common_btn]
-                Id Card_header_btn_move ; InnerHtml <| ICON.HorizontalMoveBar []] []
-          Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
-                Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin [] ] []
-                Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.close [] ] []
-          ]
-        
-        
-        ]
-        Div [Id Card_body] [
-
-        
-      ]
-      ]
-      
-    ]
   let Init (env:GlobalCore) (p:pointF) =
     let view = build <|atom (p:pointF)
     
@@ -501,22 +448,46 @@ module Card =
     let addTxt = core.view.hashmap.[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
     let cardBody = core.view.hashmap.[Card_body.S]
-    
+    let self = core.view.element.Value
+    self.onclick <- fun e-> core.env.state.setFocus self
+      
     addTxt.onclick<- fun e->
-      core.op_field.addFields [build (cardField<| Text (thisTime.toLocaleString()+"\n") )]|>ignore
-      let body = cardBody.element.Value
-      body.scrollTo(0,body.scrollHeight-body.clientHeight)
+      
+      let bricks = core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
+      let textarea = bricks[-1].element.Value:?>HTMLTextAreaElement
+      textarea.autofocus<-true
+
+      core.op_view.scrollToBottom
       
       
       ()
-    addImg.onclick <- fun e->
-      ()
+    addImg.onclick <- fun e-> env.event.screenCapBegin.Trigger(core.Id)
 
     close.onclick<- fun e->
       console.log "close triggered"
       core.event.Close.Trigger()
     move.onmousedown<- fun e->
-      core.event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
+      let self = core.view.element.Value
+      let oldSelfP = pointF.fromElement self
+      let oldMouseP = pointF.fromMouseEvent e
+      let mutable IsMoving = true
+      let onMoveHandle = Handler<MouseEvent>(         
+          fun sender e2->
+          if IsMoving && e2.buttons =1 then    
+            let newMouseP = pointF.fromMouseEvent e2
+            pointF.setElementPosition self (oldSelfP+(newMouseP-oldMouseP))
+            ()
+        )
+      let onBtnUpHandle = Handler<MouseEvent>(
+          fun sender e3 ->
+            if IsMoving then
+              IsMoving<-false
+              core.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
+        )
+      core.env.event.mouseMoving.Publish.AddHandler onMoveHandle
+      core.env.event.mouseUp.Publish.AddHandler onBtnUpHandle
+      ()
+      // core.event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
     pin.onclick<- fun e->
       core.event.Pin.Trigger(pointF.set e.clientX e.clientY)
     // recordClose.onclick<- fun e->
@@ -530,15 +501,15 @@ module Card =
       core.state.IsMoving <-true
     core.event.Pin.Publish.Add <| fun e->
       core.state.pinState <- core.state.pinState.Switch
-      core.op_view.PinSwitch()
+      core.op_view.AfterPinSwitch()
       
     env.event.mouseMoving.Publish.Add <| fun e-> 
       if core.state.IsMoving then
         core.op_view.Position (pointF.set e.clientX e.clientY)
     env.event.mouseUp.Publish.Add <| fun e->
       core.state.IsMoving <-false
-    env.addCard core
-    core.op_view.positionFix p
+    env.addMember core
+    core.op_view.AfterPinSwitch()
     core
   //从内存读取
   let load (guid:string) = ()

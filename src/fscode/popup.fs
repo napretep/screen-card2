@@ -17,8 +17,6 @@ let ToBackendHeader =
 let MsgReceivedCallback callback =
     ChromeMsg.ReceivedCallback RuntimeMsgActor.Popup callback
 
-chromeRuntime.onMessage.addListener (MsgReceivedCallback(fun msg -> console.log msg))
-
 
 
 

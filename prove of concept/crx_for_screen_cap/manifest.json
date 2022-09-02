@@ -1,31 +1,29 @@
 {
     "manifest_version": 3,
-    "name": "CRXJS Vanilla JS Example",
+    "name": "screen cap test",
     "version": "1.0.1",
     "action": { "default_popup": "popup.html" },
     "content_scripts": [{
         "js": [
-            "src/jscode/content.js"
+            "content.js"
         ],
         "matches": [
             "http://*/*", "https://*/*"
         ]
     }],
     "background": {
-        "service_worker": "src/jscode/backend.js",
-        "type": "module"
+        "service_worker": "background.js",
+        "persistent": true
     },
 
     "externally_connectable": {
         "matches": ["*://*.google.com/*"]
     },
     "permissions": [
-         "<all_urls>",
         "activeTab",
         "tabs",
         "notifications",
-        "storage",
-        "unlimitedStorage"
+        "storage"
     ],
     "web_accessible_resources": [{
         "matches": [

@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="typeProviders/Chrome.fs" />
+    <Compile Include="typeProviders\types.fs" />
     <Compile Include="common\styleSheet.fs" />
     <Compile Include="common\constant.fs" />
     <Compile Include="common\obj.fs" />

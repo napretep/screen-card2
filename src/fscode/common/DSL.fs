@@ -43,6 +43,7 @@ type [<StringEnum>] Tag =
   |P
   |Input
   |TextArea
+  |Canvas
 
 type Brick ={
   tagType:Tag
@@ -100,6 +101,7 @@ let Input = Brick.Builder Input
 let Span = Brick.Builder Span
 let Img = Brick.Builder Img
 let TextArea = Brick.Builder TextArea
+let Canvas = Brick.Builder Canvas
 let classes objs = Classes << AsStr <| objs
 let Id (objs) = //Id <| List.head <| AsStr <| objs
     [objs] |> AsStr |> List.head |> Id

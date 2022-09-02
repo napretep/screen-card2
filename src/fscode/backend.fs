@@ -32,6 +32,19 @@ let Storage = Dictionary<obj, obj>()
 chromeRuntime.onMessage.addListener (
     MsgReceivedCallback (fun header ->
         match header.sender,header.purpose with
+        |Tab,ScreenCapRequest->
+            console.log "收到 Tab,ScreenCapRequest 请求"
+            chromeWindows.getCurrent().``then``(fun (e)->
+                    chromeTabs.captureVisibleTab(e.id.Value).``then``(
+                      fun (data)->
+                          console.log data
+                          {ToTabHeader with content = data; purpose=ScreenCapOK} |> ChromeMsg.To
+                      ,fun (data)->
+                          console.log data
+                          {ToTabHeader with content = data; purpose=ScreenCapNo} |> ChromeMsg.To
+                    )
+            )|>ignore
+            ()
         |Tab,ShowContent ->
             {header with sender=Backend;receiver=Tab} |> ChromeMsg.To
         |Tab,TabLoaded -> (
