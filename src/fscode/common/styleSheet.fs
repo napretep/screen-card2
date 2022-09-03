@@ -292,7 +292,7 @@ let commonStyle = $"""
 	left:0;
 }}
 .{Common_mask}{{
-	position: fixed;
+	background:#ffffff50;
     width: 100%%;
     height: 100%%;
     cursor: crosshair;

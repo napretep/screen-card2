@@ -11,8 +11,8 @@
     <Compile Include="common\obj.fs" />
     <Compile Include="common\funcs.fs" />
     <Compile Include="common\DSL.fs" />
-    <Compile Include="common\globalTypes.fs" />
     <Compile Include="common\storageTypes.fs" />
+    <Compile Include="common\globalTypes.fs" />
 
     <Compile Include="common\Deferred.fs" />
     <Compile Include="common\modifies.fs" />

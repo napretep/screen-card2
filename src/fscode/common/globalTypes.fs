@@ -10,6 +10,7 @@ open app.common.obj
 open app.common.funcs
 open app.common.obj.Geometry
 open app.common.styleSheet
+open app.common.storageTypes
 
 type ICore (view,Id) =
   member val view:Brick=view with get,set
@@ -38,6 +39,7 @@ type GlobalState = {
   mutable FrameDiv :HTMLElement
   mutable ScreenCapDataUrl:string
   mutable CurrentFocusElement:HTMLElement option
+  mutable cardNeedDisplay:Save.CardNeedDisplay
 }
 with
   static member init =
@@ -71,12 +73,14 @@ with
       ScreenCapDataUrl = ""
       FrameRect = Rect.zero
       CurrentFocusElement = None
+      cardNeedDisplay = Save.CardNeedDisplay.init
     }
   member this.setFocus (e:HTMLElement) =
     this.CurrentFocusElement |> Option.iter (fun e-> e.classList.remove Common_zindexFocus.S)
     e.classList.add Common_zindexFocus.S
     this.CurrentFocusElement <- Some e
-    ()    
+    ()
+  
 type GlobalEvent={
   mouseMoving:Event<MouseEvent>
   mouseUp:Event<MouseEvent>
@@ -108,8 +112,20 @@ with
   member inline this.addMember (core:ICore) =
     this.root.appendChild core.view.element.Value |>ignore
     this.hashMap <- this.hashMap.Add (core.Id,core)
+    DataStorage.appendUnique CardLib.S core.Id
   member inline this.removeMember (core:ICore) =
     this.root.removeChild core.view.element.Value |>ignore
     this.hashMap.Remove core.Id
-  
-    
+  member this.saveTransTab =
+    let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
+    DataStorage.set (TransTab.S) transTab |>ignore
+    ()
+  member this.AppendToTransTab (data:string)=
+    let transTab  = this.state.cardNeedDisplay.transTab
+    if transTab|>List.contains data |> not then
+      this.state.cardNeedDisplay.transTab<-data::transTab
+    this.saveTransTab
+  member this.RemoveFromTransTab (data:string)=
+    let transTab  = this.state.cardNeedDisplay.transTab
+    this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>data)
+    this.saveTransTab

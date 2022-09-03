@@ -64,7 +64,7 @@ chromeTabs.onActivated.addListener(Action<_>(
             let header = {ToTabHeader with
                                 Id =Some tab.tabId
                                 content= $"{Some tab.tabId} on Activated at {thisTime.toLocaleString()}"
-                                purpose=Continuation}
+                                purpose=UserActivatedThisPage}
             (tab.tabId,header) ||>ChromeMsg.ToTabById  |> ignore
         )
 )

@@ -27,20 +27,26 @@ module Card =
       |Collapse -> Expand
       
   type [<StringEnum>] PinState =
-    |PinAtPage // 在页面上绝对定位
-    |PinAtScreen // 在屏幕上固定定位
-    |PinBetweenTabs // 在tab之间固定定位.
+    |PinToPage // 在页面上绝对定位
+    |AmongScreen // 在屏幕上固定定位
+    |TransTab // 在tab之间固定定位.
   with
     member this.Switch =
       match this with
-      |PinAtPage -> PinAtScreen
-      |PinAtScreen -> PinBetweenTabs
-      |PinBetweenTabs -> PinAtPage
+      |PinToPage -> AmongScreen
+      |AmongScreen -> TransTab
+      |TransTab -> PinToPage
     member this.getNumber =
       match this with 
-      |PinAtPage -> 0
-      |PinAtScreen -> 1
-      |PinBetweenTabs -> 2
+      |PinToPage -> 0
+      |AmongScreen -> 1
+      |TransTab -> 2
+    static member fromNumber (n:float)=
+      match int n with
+      |0 -> PinToPage
+      |1 -> AmongScreen
+      |2 -> TransTab
+      
   end
   type FieldState={
     mutable expandState:ExpandState
@@ -53,19 +59,19 @@ module Card =
     mutable editTime:float
     mutable Id:string
     mutable content:string // 当 text时, 是textvalue, 当 是 image 时, 是dataURL
-    mutable kind:float // 0 表示 text, 1表示image 
+    mutable contentKind:float // 0 表示 text, 1表示image 
   }
   with
     static member init id content kind=
       let t= thisTime.valueOf()
       {
-        webScrollTo = pointF.zero
-        content=content
-        kind=kind
         expandState=Collapse
-        IsMoving = false
         BeginMoveMouseAt= -1
         BeginMoveElementAt= -1
+        IsMoving = false
+        webScrollTo = pointF.set window.scrollX window.scrollY
+        content=content
+        contentKind=kind
         editTime = t
         createTime = t
         url = window.location.href
@@ -74,7 +80,7 @@ module Card =
     member this.Save:Save.CardField =
       {
         majorKind = SaveKind.CardField
-        contentKind = this.kind
+        contentKind = this.contentKind
         content = this.content
         url = this.url
         webScrollTo = this.webScrollTo.toTuple
@@ -82,6 +88,15 @@ module Card =
         editTime =this.editTime
         Id=this.Id
       }
+    member this.clone (field:Save.CardField)=
+      this.webScrollTo<-pointF.fromTuple field.webScrollTo
+      this.content<-field.content
+      this.contentKind<-field.contentKind
+      this.editTime <-field.editTime
+      this.createTime<-field.createTime
+      this.url<-field.url
+      this.Id <-field.Id
+    
     
   type FieldEvent={
     MoveBegin:Event<string*pointF> // string => Id of field pointF=>position mousedown
@@ -112,6 +127,11 @@ module Card =
     mutable FieldBeginMoveElementAt:float
     mutable createTime:float
     mutable editTime:float
+    mutable url:string
+    mutable webScrollTo:pointF
+    mutable position:pointF
+    mutable size:size2d
+    mutable show:bool
   }
   with
     static member init =
@@ -122,15 +142,31 @@ module Card =
       {
       IsMoving = false
       MoveBeginAt = MouseDomPoint.set -1 -1 -1 -1
-      pinState = PinAtPage
       DumbList=[] // when field move
       PlaceHolder = placeHolder
       FieldIsMoving = false 
       FieldBeginMoveMouseAt = -1 
       FieldBeginMoveElementAt = -1
-      createTime= -1 
-      editTime= -1
+      //save data
+      url = window.location.href
+      webScrollTo = pointF.set window.scrollX window.scrollY
+      createTime= thisTime.valueOf()
+      editTime= thisTime.valueOf()
+      pinState = PinToPage
+      size=size2d.zero
+      position = pointF.zero
+      show=true
     }
+    member this.clone (card:Save.Card) =
+      this.url<-card.url
+      this.webScrollTo<-pointF.fromTuple card.webScrollTo
+      this.createTime <-card.createTime
+      this.editTime <- card.editTime
+      this.pinState<- PinState.fromNumber card.pin
+      this.size <- size2d.fromTuple card.size
+      this.position <- pointF.fromTuple card.position
+      this.show<- card.show
+      ()
   type Event' = {
     Close :Event<unit>
     MoveBegin:Event<pointF>
@@ -223,11 +259,14 @@ module Card =
     member val op_field:Op_Field = Op_Field(this)
   and Op_State (env:Core)  =
     member val env = env
-    member this.save:Save.Card =
+    member this.save=
       let fieldsState = this.env.view.hashmap[Card_body.S].children
                         |> List.map (fun (b:Brick)->this.env.fieldState[b.Id].Save)|>List.toArray
-      console.log fieldsState
-      let rect = Rect.fromElement this.env.view.element.Value
+      // console.log fieldsState
+      let carrier = this.env.view.element.Value
+      let body = this.env.view.hashmap[Card_body.S].element.Value
+      let p = pointF.fromElementBounding carrier
+      let r = size2d.fromElementBounding body
       let state = this.env.state
       let save:Save.Card  = 
         {
@@ -237,73 +276,108 @@ module Card =
           editTime = state.editTime
           fields = fieldsState
           pin = float state.pinState.getNumber
-          position = rect.Point.toTuple
-          size = rect.Size.toTuple
+          position = p.toTuple
+          size = r.toTuple
+          url = state.url
+          webScrollTo = state.webScrollTo.toTuple
+          show=state.show
         }
       console.log save
-      let cardlib:Save.CardLib = {
-        cards= [|save|]
-      }
-      DataStorage.set SaveKind.CardLib.S cardlib
-      save 
+      DataStorage.set save.Id save
+      ()
   and  Op_View (env:Core) =
     member val env = env
-    member this.Position (nowMouseAt:pointF) =
+    member this.init =
+      let carrier = this.env.view.element.Value
+      let body = this.env.view.hashmap[Card_body.S].element.Value
+      let state = this.env.state
+      pointF.setElementPosition carrier state.position
+      console.log state.size 
+      size2d.setElementStyleSize body state.size 
+      this.setPinColor
+      this.AfterSetPinColor state.position
+      
+    member this.movePosition (nowMouseAt:pointF) =
       
       let style = env.view.element.Value.style
       let oldMouse = env.state.MoveBeginAt.mousePoint
       let oldElem = env.state.MoveBeginAt.elementPoint
-      let extraLeft  = if this.env.state.pinState = PinAtPage then window.scrollX else 0
-      let extraTop  = if this.env.state.pinState = PinAtPage then window.scrollY else 0
-      style.left <- $"{oldElem.left+nowMouseAt.left-oldMouse.left + extraLeft}px"
-      style.top <- $"{oldElem.top+nowMouseAt.top-oldMouse.top +  extraTop}px"
+      let extraLeft  = if this.env.state.pinState = PinToPage then window.scrollX else 0
+      let extraTop  = if this.env.state.pinState = PinToPage then window.scrollY else 0
+      style.left <- $"{oldElem.left+nowMouseAt.left - oldMouse.left + extraLeft}px"
+      style.top <- $"{oldElem.top+nowMouseAt.top - oldMouse.top +  extraTop}px"
     
-    member this.AfterPinSwitch () =
+    member this.repositionWhenPinChanged () =
       let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
       let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
       let cliP = pointF.set (carrier.getBoundingClientRect().left) (carrier.getBoundingClientRect().top)
       let scrollP =pointF.set window.scrollX window.scrollY
       match env.state.pinState with
-      |PinAtPage ->
+      |PinToPage ->
         Pin.style.background<-"transparent"
-        let p = cliP + scrollP
-        carrier.style.left <- $"{p.left}px"
-        carrier.style.top <- $"{p.top}px"
-        carrier.style.position <- "absolute"
-      |PinAtScreen ->
+      |AmongScreen ->
         Pin.style.background<-"yellow"
-        let p = styP - scrollP
-        carrier.style.left <- $"{p.left}px"
-        carrier.style.top <- $"{p.top}px"
-        carrier.style.position <- "fixed"
-        
-      |PinBetweenTabs ->
+      |TransTab ->
         Pin.style.background<-"#7e7"
-        
+       
+        ()
     member this.scrollToBottom =
       let body = this.env.view.hashmap[Card_body.S].element.Value
       body.scrollTo(0,body.scrollHeight-body.clientHeight)
       ()
-    member this.positionFix (p:pointF) =
+    member this.pinPositionFix (p:pointF) =
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
       let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
       let styP = pointF.set (getFloat(carrier.style.left))  (getFloat(carrier.style.top))  
       let cliP = pointF.set (carrier.getBoundingClientRect().left) (carrier.getBoundingClientRect().top)
       let scrollP =pointF.set window.scrollX window.scrollY
       match this.env.state.pinState with
-      |PinAtPage ->
+      |PinToPage ->
         let newp = p + scrollP
         pointF.setElementPosition carrier newp
         carrier.style.position <- "absolute"
-        
-      |PinAtScreen->
+      |AmongScreen->
         carrier.style.position <- "fixed"
-      |PinBetweenTabs->
+      |TransTab->
         carrier.style.position <- "fixed"
+    member this.AfterSetPinColor (p:pointF)=
+      let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
+      let scrollP =pointF.set window.scrollX window.scrollY
+      let pinState = this.env.state.pinState
+      let Id' = this.env.Id
+      match pinState with
+      |PinToPage -> // absolute
+        let newp = p + scrollP
         
+        carrier.style.position <- "absolute"
+        pointF.setElementPosition carrier newp
+        this.env.env.RemoveFromTransTab Id'
+        DataStorage.appendUnique this.env.state.url Id'
+      |AmongScreen ->
+        carrier.style.position <- "fixed"
+        pointF.setElementPosition carrier p
+        this.env.env.RemoveFromTransTab Id'
+        DataStorage.appendUnique this.env.state.url Id'
+      |TransTab ->
+        carrier.style.position <- "fixed"  
+        pointF.setElementPosition carrier p
         
+        this.env.env.AppendToTransTab Id'
         
+        ()
+      ()
+    member this.setPinColor =
+      let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
+      match env.state.pinState with
+      |PinToPage ->
+        Pin.style.background<-"transparent"
+      |AmongScreen ->
+        Pin.style.background<-"yellow"
+      |TransTab ->
+        Pin.style.background<-"#7e7"
+    // member this.checkPin =
+      
   and Op_Field (env:Core)  as self=
     member val lastY:float = -1 with get,set
     member val env = env
@@ -358,6 +432,26 @@ module Card =
     member this.addImgFields (imgs:string list)=
       imgs |> List.map (fun (i:string)->this.makeBrickAndStateEvent i 1 None )|> this.addFields
     
+    member this.clearFields=
+      let body = this.env.view.hashmap[Card_body.S]
+      let mutable hashmap = this.env.view.hashmap 
+      //清空 brick, hashmap, Dom, state, event
+      body.children |> List.iter (fun (kid:Brick)->hashmap<-hashmap.Remove kid.Id)
+      this.env.view.hashmap <- hashmap
+      for i=0 to body.children.Length-1 do
+        body.children[i].element.Value.remove()
+      body.children <- []
+      this.env.fieldEvent<-Map<string,FieldEvent>[]
+      this.env.fieldState<-Map<string,FieldState>[]
+      
+      ()
+    member this.loadFields (fields:Save.CardField array) =
+      fields |> Seq.toList|>List.map (fun (field:Save.CardField)->
+        let brick = this.makeBrickAndStateEvent field.content (int field.contentKind )(Some field.Id)
+        this.env.fieldState[field.Id].clone field
+        brick
+        )|> this.addFields
+      
     member this.updateIndexOfBodyChildren =
       let body = this.env.view.hashmap[Card_body.S]
       let kids = body.element.Value.children
@@ -478,7 +572,7 @@ module Card =
 
       
 
-  let Init (env:GlobalCore) (p:pointF) =
+  let Init (env:GlobalCore) (p:pointF) id =
     let view = build <|atom (p:pointF)
     
     let core = Core(
@@ -486,7 +580,7 @@ module Card =
       view = view,
       event = Event'.init,
       state = State.init,
-      Id = view.element.Value.id
+      Id = id
     )
     
     console.log "hashmap"
@@ -507,21 +601,26 @@ module Card =
       
     addTxt.onclick<- fun e->
       
-      let bricks = core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
+      core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
       core.op_view.scrollToBottom
-      let save = core.op_state.save
+      core.op_state.save
       
       ()
     addImg.onclick <- fun e-> env.event.screenCapBegin.Trigger(core.Id)
 
     close.onclick<- fun e->
       console.log "close triggered"
+      core.env.RemoveFromTransTab core.Id
+      core.state.show<-false
+      core.op_state.save
+      core.env.removeMember core|>ignore
       core.event.Close.Trigger()
+      
     move.onmousedown<- fun e->
       let self = core.view.element.Value
-      let oldSelfP = pointF.fromElement self
+      let oldSelfP = pointF.fromElementStyle self
       let oldMouseP = pointF.fromMouseEvent e
-      Op_element.addMask  core.env.root
+      core.env.root|> Op_element.addMask |> ignore  
       let mutable IsMoving = true
       let onMoveHandle = Handler<MouseEvent>(         
           fun sender e2->
@@ -535,15 +634,17 @@ module Card =
             if IsMoving then
               IsMoving<-false
               core.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
-              Op_element.delMask core.env.root
+              core.env.root|>Op_element.delMask|> ignore
+              ()
         )
       core.env.event.mouseMoving.Publish.AddHandler onMoveHandle
       core.env.event.mouseUp.Publish.AddHandler onBtnUpHandle
       ()
       
     pin.onclick<- fun e->
-      core.state.pinState<- core.state.pinState.Switch
-      core.op_view.AfterPinSwitch()
+      core.state.pinState <- core.state.pinState.Switch
+      core.op_view.setPinColor
+      core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
       
     core.event.Close.Publish.Add <| fun e->
       env.root.removeChild core.view.element.Value |>ignore
@@ -551,17 +652,28 @@ module Card =
       let r = view.element.Value.getBoundingClientRect()
       core.state.MoveBeginAt <- MouseDomPoint.set e.left e.top r.left r.top
       core.state.IsMoving <-true
-    core.event.Pin.Publish.Add <| fun e->
-      core.state.pinState <- core.state.pinState.Switch
-      core.op_view.AfterPinSwitch()
+
       
     env.event.mouseMoving.Publish.Add <| fun e-> 
       if core.state.IsMoving then
-        core.op_view.Position (pointF.set e.clientX e.clientY)
+        core.op_view.movePosition (pointF.set e.clientX e.clientY)
     env.event.mouseUp.Publish.Add <| fun e->
       core.state.IsMoving <-false
     env.addMember core
-    core.op_view.AfterPinSwitch()
+    core.op_view.setPinColor
+    core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core
   //从内存读取
-  let load (guid:string) = ()
+  let load (env:GlobalCore) (card:Save.Card) =
+    let p = pointF.fromTuple card.position
+    let pin = PinState.fromNumber card.pin
+    let core =
+      match env.hashMap.TryFind card.Id with
+      |Some iCore ->
+        iCore:?>Core 
+      |_->Init env p card.Id
+    console.log card
+    core.state.clone card // 这个地方 很重要, 以后新增什么属性, 需要看看有没有成功克隆
+    core.op_view.init
+    core.op_field.clearFields
+    core.op_field.loadFields card.fields

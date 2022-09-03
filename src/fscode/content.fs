@@ -150,8 +150,8 @@ module AssistDot =
   Subscribe.Close.Add <| fun ()->
     state.IsClosed<-true
     view.element.Value.style.display<-"none"
-
-CardLib.Core
+    
+    
 let globalCore ={
   event=GlobalEvent.init
   root = baseElem
@@ -159,6 +159,8 @@ let globalCore ={
   state = GlobalState.init
 }
 
+
+    
 globalCore.state.FrameDiv.onclick <- fun e->(
   globalCore.state.setFocus globalCore.state.FrameDiv
   ()
@@ -168,7 +170,7 @@ let capturingFrameDragBar = globalCore.state.FrameDiv.children[2]:?>HTMLElement
 capturingFrameDragBar.onmousedown<-fun e->
   let carrier = globalCore.state.FrameDiv
   let oldMouseP = pointF.fromMouseEvent e
-  let oldCarrierP = pointF.fromElement carrier
+  let oldCarrierP = pointF.fromElementBounding carrier
   let mouseMoveEvent = globalCore.event.mouseMoving
   let mouseUpEvent = globalCore.event.mouseUp
   let mutable IsMoving = true
@@ -191,7 +193,7 @@ capturingFrameDragBar.onmousedown<-fun e->
   ()
 
 let closeCapFrame ()= 
-  size2d.setElementSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
+  size2d.setElementStyleSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
   let u = globalCore.state.FrameDiv.children[0]:?>HTMLElement
   for i=0 to u.children.length-1 do u.children[i].remove()
   globalCore.state.FrameDiv.remove()
@@ -218,14 +220,14 @@ let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
     
     let el_carrier = globalCore.state.FrameDiv
     let el_self = el_carrier.children[0]:?>HTMLElement
-    let oldP = pointF.fromElement el_carrier
+    let oldP = pointF.fromElementBounding el_carrier
     let newP = pointF.set e.clientX e.clientY
     let size = size2d.from2Point oldP newP
     let newSize = {
                    width = if size.width>0 then size.width else  0
                    height =if size.height>0 then size.height else  0
                    }
-    size2d.setElementSize el_self newSize
+    size2d.setElementStyleSize el_self newSize
     console.log (pointF.set e.clientX e.clientY)
   ()
   )
@@ -255,8 +257,8 @@ let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
       let kid = kids[i]
       kid.classList.remove Common_displayNone.S
       ()
-    root.classList.remove Common_mask.S
-    
+    // root.classList.remove Common_mask.S
+    root |> Op_element.delMask |> Op_element.delFixed
     
     globalCore.event.mouseMoving.Publish.RemoveHandler DrawingCapFrameOnMouseMove
     globalCore.event.mouseDown.Publish.RemoveHandler DrawingCapFrameOnMouseDown
@@ -279,8 +281,8 @@ globalCore.event.screenCapBegin.Publish.Add (fun card_id->
     closeCapFrame()
     
     //添加遮罩
-    root.classList.add Common_mask.S
-
+    // root.classList.add Common_mask.S
+    root |>Op_element.addMask |> Op_element.addFixed
     globalCore.event.mouseDown.Publish.AddHandler DrawingCapFrameOnMouseDown
     globalCore.event.mouseUp.Publish.AddHandler DrawingCapFrameOnMouseUp
 
@@ -304,7 +306,7 @@ AssistDot.Subscribe.OpenCardLib.Add (fun ()->
     cardLib.op_view.show
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
-  let newCard = Card.Init globalCore (pointF.set 200 200)
+  let newCard = Card.Init globalCore (pointF.set 200 200) (newGuid())
   ()
 )
 
@@ -324,7 +326,74 @@ window.onmouseup <- fun e->
 window.onmousedown <- fun e->
   globalCore.event.mouseDown.Trigger(e)
   ()
+let ReadDisplayCardFromDB() =
+  //读取全部的 TransTab 并展示
+  let loadTransTab (data:obj option)=
+    data|>Option.iter(
+      fun aCard->
+        let card=aCard:?>Save.Card
+        if card.pin = 2 then Card.load globalCore card|>ignore
+        
+      )
+  let maybeLoadCards (card_ids:string array) (f:obj option->unit)=
+    console.log card_ids
+    DataStorage.read(card_ids).``then``(
+      fun maybeData->
+        card_ids|>Array.map (fun card_id-> f(maybeData[card_id])
+          )
+      )
+    |>ignore
 
+  DataStorage.read([|TransTab.S|]).``then``
+    (fun maybeData->
+      maybeData[TransTab.S]|>Option.iter (
+        fun value->maybeLoadCards(value:?>string array) loadTransTab
+        )
+    )
+  |> ignore   
+  
+  
+  
+  //读取OnPageCard
+  let loadOnPageCard (data:obj option)=
+    data|>Option.iter(
+      fun aCard->
+        let card=aCard:?>Save.Card
+        Card.load globalCore card|>ignore
+      )
+  
+  DataStorage.read([|window.location.href|]).``then``
+    (fun maybeData->
+        maybeData[window.location.href]|>Option.iter (
+          fun card_ids ->maybeLoadCards (card_ids:?>string array) loadOnPageCard
+    )
+  )
+  |>ignore
+  
+  // //读取卡片库
+  // DataStorage.read([|CardLib.S|]).``then``(
+  //   
+  //   )
+  
+  //读取全部的当前页面的内容
+  
+  
+  // DataStorage.read([|SaveKind.CardLib.S|])
+  //   .``then``(fun data->
+  //     data[SaveKind.CardLib.S]|>Option.iter (fun value ->
+  //         let cardlib = value:?>Save.CardLib
+  //         let card = cardlib.cards[0]
+  //         if card.pin = 2 then 
+  //           Card.load globalCore cardlib.cards[0]
+  //         else
+  //    
+  //           ()
+  //         console.log cardlib
+  //         
+  //     )
+  //     
+  //     )
+  |>ignore
 let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMsgActor.Tab}
 chromeRuntime.onMessage.addListener (
   MsgReceivedCallback (fun msg ->
@@ -351,12 +420,6 @@ chromeRuntime.onMessage.addListener (
         context.clip()
         globalCore.state.ScreenCapDataUrl <- canvas.toDataURL()
         globalCore.event.screenCapOk.Trigger()
-        // let el2 = build (Img [ Src (canvas.toDataURL()) ] [  ])
-        // frame.appendChild el2.element.Value
-        ()
-        // displayNonNone (globalCore.state.FrameDiv)
-        
-      // document.body.appendChild img
       img.src<- (msg.content:?>string)
       Fable.Core.JS.setTimeout job 30
       
@@ -366,7 +429,9 @@ chromeRuntime.onMessage.addListener (
       displayNonNone (globalCore.state.FrameDiv)
       ()
     | ShowContent -> msg.content |> Pip.log
-    // | Continuation -> Continuation.test ("count", Pip.log) |> ignore
+    | UserActivatedThisPage ->
+      ReadDisplayCardFromDB()
+      |> ignore
     | _ -> msg |> Pip.log)
 )
 
@@ -377,7 +442,7 @@ globalCore.event.screenCapOk.Publish.Add (fun ()->
   let cardCore = globalCore.hashMap[card_id]:?>Card.Core
   cardCore.op_field.addImgFields [dataurl] |> ignore
   cardCore.op_view.scrollToBottom
-  cardCore.op_state.save
+  JS.setTimeout (fun ()->cardCore.op_state.save) 100
   ()
   )
 
@@ -385,8 +450,4 @@ console.log $" this is content.js from scapp2 version={thisTime.toLocaleString (
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")
 
 
-DataStorage.read([|SaveKind.CardLib.S|])
-  .``then``(fun data->
-    console.log data[SaveKind.CardLib.S].Value
-    ()
-    )|>ignore
+ReadDisplayCardFromDB()

@@ -8,6 +8,13 @@ open Fable.Core.JS
 open Fable.Core.JsInterop
 open Browser.Dom
 
+type  [<StringEnum>] StorageName=
+  |TransTab
+  |CardLib
+  with
+    member this.S= this.ToString()
+
+
 [<RequireQualifiedAccess>]
 type [<StringEnum>] SaveKind =
   |Card
@@ -36,16 +43,29 @@ module Save=
     Id :string  
   }
 
-    
+
+  type CardNeedDisplay={
+    mutable transTab:string list
+    mutable relateTab:string list
+  }
+  with
+    static member init ={
+      transTab = []
+      relateTab = []
+    } 
+  
   type Card={
     Id:string
+    url:string
+    webScrollTo:float*float
     majorKind:SaveKind
     createTime:float //时间戳
     editTime:float //时间戳
     fields:CardField array
     pin:float // 0 page 1 screen 2 tab
-    position:float*float //x,y
+    position:float*float //x,y 是client bounding rect 的位置
     size:float*float
+    show:bool//关闭后通常不会show
   }
 
   // type CardLib = {
@@ -69,7 +89,7 @@ module Save=
   //         cards=[||]
   //     }
   type CardLib ={
-    cards:Card array
+    card_ids:string array
   }
   type CommonState={
     Id:SaveKind
@@ -94,13 +114,29 @@ module Save=
 type DataStorage =
     static member getString (keys:SaveKind array)=
       keys |> Seq.map (fun key -> key.S )|>Seq.toArray |> ResizeArray<string>
-      
+    static member appendUnique (key:string) (value:obj)=
+      chromeStorage.local.get(ResizeArray[key]).``then``(
+        fun data->
+            let result = 
+              let newdata = data.[key]
+                          |>Option.map (fun (d)->
+                              d:?>obj array |> Seq.toList
+                            )
+                          |>Option.defaultValue [] 
+              if newdata|>List.contains value |> not then
+                value::newdata
+              else
+                newdata
+            DataStorage.set key (result|>Seq.toArray)
+        )|>ignore
+        
+      ()
     //read 是异步的  
     static member read(key: string array) =
           chromeStorage.local.get(ResizeArray key)
     static member readAll = chromeStorage.local.get()
-    static member set (key:string) value =
-      chromeStorage.local.set (kv key value)
+    static member set (key:string) (value:obj) =
+      chromeStorage.local.set(kv key value)
 
     static member del (key:string) =
       chromeStorage.local.remove (U2.Case1 key)

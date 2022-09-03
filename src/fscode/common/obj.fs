@@ -29,7 +29,7 @@ type runtimeState = unit
 type storage = Dictionary<string,obj>
 type [<StringEnum>] RuntimeMsgActor = |Tab|Popup|Backend
 type [<StringEnum>] RuntimeMsgFormat = |Standard|Other
-type [<StringEnum>] RuntimeMsgPurpose = |ShowContent|Continuation|GetStorage|TabLoaded|Call|Other|ScreenCapRequest|ScreenCapOK|ScreenCapNo
+type [<StringEnum>] RuntimeMsgPurpose = |ShowContent|UserActivatedThisPage|GetStorage|TabLoaded|Call|Other|ScreenCapRequest|ScreenCapOK|ScreenCapNo
 type RuntimeMsg = 
      { purpose:RuntimeMsgPurpose option
        callback :(obj->unit) option
@@ -182,8 +182,10 @@ module Geometry =
         }
         static member from2Point (start:pointF) (end':pointF) =
             size2d.set (end'.left - start.left) (end'.top-start.top)
+        static member fromTuple (t:float*float) =
+            size2d.set (fst t) (snd t)
         member this.toTuple = (this.width,this.height)
-    
+        
     type Rect ={
         top:float
         left:float
@@ -205,5 +207,4 @@ module Geometry =
             Rect.set r.left r.top r.width r.height
         member this.Point = pointF.set this.left this.top
         member this.Size = size2d.set this.width this.height
-        
         
