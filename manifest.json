@@ -2,7 +2,8 @@
     "manifest_version": 3,
     "name": "CRXJS Vanilla JS Example",
     "version": "1.0.1",
-    "action": { "default_popup": "popup.html" },
+    "action": { "default_popup": "popup.html" ,
+    "default_icon": "public/static/logo.svg"},
     "content_scripts": [{
         "js": [
             "src/jscode/content.js"
@@ -20,7 +21,6 @@
         "matches": ["*://*.google.com/*"]
     },
     "permissions": [
-         "<all_urls>",
         "activeTab",
         "tabs",
         "notifications",

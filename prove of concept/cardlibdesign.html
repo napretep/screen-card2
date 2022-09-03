@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+<style>
+.common_zindexFocus{
+	z-index:9999999;
+}
+#common_baseRoot{
+	position: absolute;
+	z-index:9999999;
+	top:0;
+	left:0;
+}
+.common_mask{
+	background:#ffffff50;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+svg{
+padding:4px;
+}
+.common_flex_grow_1{
+	flex-grow:1;
+}
+.common_absolute{
+ position:absolute;
+}
+.common_glass{
+ backdrop-filter: blur(25px) saturate(200%) ;
+-webkit-backdrop-filter: blur(25px) saturate(200%);
+ background-color: transparent;
+ box-shadow:1px 1px 1px rgb(0 ,0 ,0 ,0.14);
+/*filter: drop-shadow(1px 1px 1px #00000030);*/
+
+}
+.common_Shadow{
+    box-shadow: 0px 0px 8px;
+}
+.common_backdropBlur{
+    backdrop-filter:blur(20px);
+}
+.common_component{
+    position:fixed;
+    background-color:#ffffff30;
+    /*background-image: linear-gradient(180deg, #2af59820 0%, #009efd20 100%);
+    background: linear-gradient(to bottom, #D5DEE7 0%, #E8EBF2 50%, #E2E7ED 100%), linear-gradient(to bottom, rgba(0,0,0,0.02) 50%, rgba(255,255,255,0.02) 61%, rgba(0,0,0,0.02) 73%), linear-gradient(33deg, rgba(255,255,255,0.20) 0%, rgba(0,0,0,0.20) 100%); background-blend-mode: normal,color-burn;*/
+
+}
+.common_fixed{
+    position:fixed;
+}
+
+.common_btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:20px;
+    height:20px;
+}
+
+.common_btn:hover{
+    background-image: linear-gradient(to top, #accbee40 0%, #e7f0fd40 100%);
+    cursor:pointer;
+}
+.common_btn:active{
+   background-image: linear-gradient(to top, #6a85b640 0%, #bac8e040 100%);
+   cursor:pointer;
+}
+.assistDot_self{
+
+    display:flex;
+    flex-direction: column;
+}
+
+.common_displayNone{
+    display:none;
+}
+.common_invisible{
+
+}
+.common_textArea{
+resize:none;
+outline:none;
+padding:5px;
+background:transparent;
+border:0;
+}
+
+.common_moveBar{
+width:60px;
+position: absolute;
+top:0;
+left:50%;
+transform:translate(-50%,0);
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+
+
+#cardLib_toolbar{
+	display:flex;
+	justify-content: space-between;
+	align-items:center;
+}
+#cardLib_toolbar_left{
+	display:flex;
+	align-items:center;
+	min-width:30%;
+}
+#cardLib_toolbar_right{
+	display:flex;
+	align-items:center;
+}
+#cardLib_container{
+	margin:2px;
+	display:flex;
+	justify-content: space-around;
+	align-content: start;
+	overflow-y: scroll;
+	scroll-behavior: smooth;
+	flex-wrap: wrap;
+	width:400px;
+	resize:both;
+}
+
+
+#cardLib_container::-webkit-scrollbar {
+backdrop-filter: blur(25px) ;
+    width: 8px;
+    height: 8px;
+}
+#cardLib_container::-webkit-scrollbar-thumb {
+border-radius: 10px;
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
+  background   : #53535300;
+}
+#cardLib_container::-webkit-scrollbar-track {
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background   : #ededed00;
+}
+
+
+#cardLib_card_item{
+	display:flex;
+	max-width:160px;
+	height:40px;
+	margin:2px;
+	align-items: center;
+}
+#cardLib_card_content>img{
+	width:40px;
+	height:40px;
+	object-fit: cover;
+	overflow:hidden;
+}
+#cardLib_card_content{
+	display:flex;
+	overflow:hidden;
+	height: 100%;
+	align-items:center;
+}
+#cardLib_card_content>span
+{
+
+    overflow: hidden;
+}
+#cardLib_card_btns{
+	height:auto;
+	display:flex;
+	flex-direction: column;
+	align-items:stretch;
+	justify-content: space-between;
+}
+#cardLib_card_btns>span{
+flex-grow: 2;
+}
+#cardLib_self{
+}
+#cardLib_searchInput{
+height:20px;
+width:1px;
+flex-grow:1;
+resize:none;
+outline:none;
+background:transparent;
+border:0;
+padding:0;
+
+}
+
+
+#card_carrier{
+
+}
+#card_self{
+
+}
+#card_body{
+width:300px;
+height:300px;
+display:flex;
+flex-direction:column;
+align-items:center;
+resize: both;
+overflow: auto;
+}
+.cardField_expanded{
+	min-height:100%
+}
+
+#card_body::-webkit-scrollbar {
+backdrop-filter: blur(25px) ;
+    width: 8px;
+    height: 8px;
+}
+#card_body::-webkit-scrollbar-thumb {
+border-radius: 10px;
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
+  background   : #53535300;
+}
+#card_body::-webkit-scrollbar-track {
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background   : #ededed00;
+}
+
+
+.cardField_self{
+	/*height:75px;*/
+	width:95%;
+	display: flex;
+	align-items:stretch;
+	margin:3px;
+	flex-grow:0
+}
+#cardField_btns{
+	height:auto;
+	display:flex;
+	flex-direction:column;
+	align-items:stretch;
+	justify-content: space-between;
+}
+#cardField_content{
+	flex:1 0 auto;
+	display:flex;
+	flex-direction:row;
+	align-items:stretch;
+	overflow: auto;
+}
+#card_header{
+	display:flex;
+	flex-direction:row;
+	justify-content:space-between;
+}
+#cardField_content_text{
+	resize:none;
+	outline:none;
+	flex:1 0 auto;
+	font-size: 1rem;
+	font-family: "Microsoft JhengHei Light";
+	width: 1px;
+}
+#cardField_content_img{
+	width:100%;
+	position:absolute;
+}
+
+#cardField_content::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+#cardField_content::-webkit-scrollbar-thumb {
+}
+#cardField_content::-webkit-scrollbar-track {
+}
+
+
+#cardField_content .common_textArea::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+#cardField_content .common_textArea::-webkit-scrollbar-thumb {
+}
+#cardField_content .common_textArea::-webkit-scrollbar-track {
+}
+
+
+.card_header_side_btn {
+	margin: 3px;
+	display: flex;
+	flex-direction: row;
+}
+.card_header_side_btn>span{
+	text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#cardField_dragBar{
+	width: 20px;
+	height:auto;
+	display:flex;
+	flex-direction: column;
+	align-items: center;
+	justify-items: center;
+	justify-content:center;
+}
+
+
+#screenCapCanvas{
+
+}
+#capturingFrame_dragBar{
+
+}
+#capturingFrame_carrier{
+	position:fixed;
+	display:flex;
+	flex-direction:column;
+}
+#capturingFrame_self{
+	min-height:30px;
+	min-width:60px;
+	border: dashed #53535340;
+	resize: both;
+	overflow: hidden;
+}
+#capturingFrame_btns{
+	display:flex;
+	justify-content: center;
+}
+
+
+</style>
+
+
+</head>
+<body>
+
+<svg t="1661727647594" class="icon" viewBox="0 0 1039 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1580" width="20" height="20"><path d="M827.299435 250.696798h-77.137476v-82.922787c0-7.713748-15.427495-21.212806-38.568739-21.212806h-347.118644c-23.141243 0-38.568738 13.499058-38.568738 21.212806v82.922787h-77.137476v-82.922787c0-53.996234 52.067797-98.350282 115.706214-98.350282h347.118644c63.638418 0 115.706215 44.354049 115.706215 98.350282v82.922787z" fill="#4081C3" p-id="1581"></path><path d="M1000.858757 310.478343h-925.649717c-21.212806 0-38.568738-17.355932-38.568739-38.568738s17.355932-38.568738 38.568739-38.568739h925.649717c21.212806 0 38.568738 17.355932 38.568738 38.568739s-17.355932 38.568738-38.568738 38.568738z" fill="#4081C3" p-id="1582"></path><path d="M750.161959 946.862524h-424.256121c-84.851224 0-154.274953-69.423729-154.274953-154.274953v-520.677966c0-21.212806 17.355932-38.568738 38.568738-38.568739h655.66855c21.212806 0 38.568738 17.355932 38.568738 38.568739v520.677966c0 84.851224-69.423729 154.274953-154.274952 154.274953z m-501.393597-636.384181v482.109228c0 42.425612 34.711864 77.137476 77.137476 77.137476h424.256121c42.425612 0 77.137476-34.711864 77.137476-77.137476v-482.109228h-578.531073z" fill="#4081C3" p-id="1583"></path><path d="M441.612053 821.514124c-21.212806 0-38.568738-17.355932-38.568738-38.568738v-376.045198c0-21.212806 17.355932-38.568738 38.568738-38.568738s38.568738 17.355932 38.568738 38.568738v376.045198c0 21.212806-17.355932 38.568738-38.568738 38.568738zM634.455744 821.514124c-21.212806 0-38.568738-17.355932-38.568738-38.568738v-376.045198c0-21.212806 17.355932-38.568738 38.568738-38.568738s38.568738 17.355932 38.568738 38.568738v376.045198c0 21.212806-17.355932 38.568738-38.568738 38.568738z" fill="#DD8911" p-id="1584"></path></svg>
+
+<div id="common_baseRoot">
+    <div class=" common_component" id="assistDot_carrier" style="left: calc(100% - 30px); top: 200px;">
+        <div class=" common_glass" id="assistDot_self">
+            <div class=" common_glass common_btn" id="common_moveBar">
+                <svg t="1661605011102" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1476" width="20" height="20">
+                    <path d="M219.428571 585.142857c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142858-73.142857-36.571429-73.142857-73.142858-73.142857z m585.142858-146.285714c36.571429 0 73.142857-36.571429 73.142857-73.142857s-36.571429-73.142857-73.142857-73.142857-73.142857 36.571429-73.142858 73.142857 36.571429 73.142857 73.142858 73.142857zM219.428571 292.571429c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142858-73.142857-36.571429-73.142857-73.142858-73.142857z m585.142858 292.571428c-36.571429 0-73.142857 36.571429-73.142858 73.142857s36.571429 73.142857 73.142858 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857zM512 292.571429c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857z m0 292.571428c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857z"
+                          fill="#000000" p-id="1477"></path>
+                </svg>
+            </div>
+            <div class=" common_glass common_btn" id="831ce89c6b8a4b97">
+                <!--?xml version="1.0" encoding="UTF-8"?-->
+                <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 8L40 40" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M8 40L40 8" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+            <div class=" common_glass common_btn" id="309e3e1e2dcf43ed">
+                <svg t="1661607775528" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="814" width="20" height="20">
+                    <path d="M853.333333 51.242667H170.666667c-18.884267 0-34.133333 14.702933-34.133334 32.887466v855.773867c0 18.193067 15.249067 32.896 34.133334 32.896h682.666666c18.884267 0 34.133333-14.702933 34.133334-32.896V84.096C887.466667 65.902933 872.2176 51.2 853.333333 51.2v0.042667z m-640.0256 74.043733h597.333334v213.947733h-597.333334V125.2864z m597.333334 493.687467h-597.333334V405.026133h597.333334v213.947734z m0 279.739733h-597.333334V684.765867h597.333334v213.947733zM290.133333 232.260267c0 22.715733 19.114667 41.147733 42.658134 41.147733 23.569067 0 42.683733-18.432 42.683733-41.147733s-19.114667-41.1904-42.683733-41.1904c-23.543467 0-42.658133 18.432-42.658134 41.147733v0.042667zM290.133333 512c0 22.715733 19.114667 41.147733 42.658134 41.147733C356.352 553.147733 375.466667 534.715733 375.466667 512s-19.114667-41.147733-42.683734-41.147733c-23.543467 0-42.658133 18.432-42.658133 41.147733z m0 279.739733c0 22.715733 19.114667 41.147733 42.658134 41.147734 23.569067 0 42.683733-18.432 42.683733-41.147734s-19.114667-41.147733-42.683733-41.147733c-23.543467 0-42.658133 18.432-42.658134 41.147733z"
+                          p-id="815" fill="#000000"></path>
+                </svg>
+            </div>
+            <div class=" common_glass common_btn" id="e03ccd09e569409d">
+                <svg t="1661606812396" class="" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9804" width="20" height="20" fill="#000000">
+                    <path d="M938.666667 810.666667H682.666667c-12.8 0-21.333333-8.533333-21.333334-21.333334s8.533333-21.333333 21.333334-21.333333h256c12.8 0 21.333333 8.533333 21.333333 21.333333s-8.533333 21.333333-21.333333 21.333334z"
+                          p-id="9805"></path>
+                    <path d="M810.666667 938.666667c-12.8 0-21.333333-8.533333-21.333334-21.333334V661.333333c0-12.8 8.533333-21.333333 21.333334-21.333333s21.333333 8.533333 21.333333 21.333333v256c0 12.8-8.533333 21.333333-21.333333 21.333334zM552.533333 938.666667H128c-12.8 0-21.333333-8.533333-21.333333-21.333334V106.666667c0-12.8 8.533333-21.333333 21.333333-21.333334h469.333333c6.4 0 10.666667 2.133333 14.933334 6.4l213.333333 213.333334c4.266667 4.266667 6.4 8.533333 6.4 14.933333v213.333333c0 12.8-8.533333 21.333333-21.333333 21.333334s-21.333333-8.533333-21.333334-21.333334v-204.8L588.8 128H149.333333v768h403.2c12.8 0 21.333333 8.533333 21.333334 21.333333s-8.533333 21.333333-21.333334 21.333334z"
+                          p-id="9806"></path>
+                    <path d="M810.666667 341.333333H597.333333c-12.8 0-21.333333-8.533333-21.333333-21.333333V106.666667c0-8.533333 4.266667-17.066667 12.8-19.2 8.533333-4.266667 17.066667-2.133333 23.466667 4.266666l213.333333 213.333334c6.4 6.4 8.533333 14.933333 4.266667 23.466666-2.133333 8.533333-10.666667 12.8-19.2 12.8z m-192-42.666666h140.8L618.666667 157.866667V298.666667zM341.333333 341.333333h-85.333333c-12.8 0-21.333333-8.533333-21.333333-21.333333v-85.333333c0-12.8 8.533333-21.333333 21.333333-21.333334h85.333333c12.8 0 21.333333 8.533333 21.333334 21.333334v85.333333c0 12.8-8.533333 21.333333-21.333334 21.333333z m-64-42.666666h42.666667v-42.666667h-42.666667v42.666667zM341.333333 554.666667h-85.333333c-12.8 0-21.333333-8.533333-21.333333-21.333334v-85.333333c0-12.8 8.533333-21.333333 21.333333-21.333333h85.333333c12.8 0 21.333333 8.533333 21.333334 21.333333v85.333333c0 12.8-8.533333 21.333333-21.333334 21.333334z m-64-42.666667h42.666667v-42.666667h-42.666667v42.666667zM341.333333 768h-85.333333c-12.8 0-21.333333-8.533333-21.333333-21.333333v-85.333334c0-12.8 8.533333-21.333333 21.333333-21.333333h85.333333c12.8 0 21.333333 8.533333 21.333334 21.333333v85.333334c0 12.8-8.533333 21.333333-21.333334 21.333333z m-64-42.666667h42.666667v-42.666666h-42.666667v42.666666zM640 512h-170.666667c-12.8 0-21.333333-8.533333-21.333333-21.333333s8.533333-21.333333 21.333333-21.333334h170.666667c12.8 0 21.333333 8.533333 21.333333 21.333334s-8.533333 21.333333-21.333333 21.333333zM554.666667 725.333333h-85.333334c-12.8 0-21.333333-8.533333-21.333333-21.333333s8.533333-21.333333 21.333333-21.333333h85.333334c12.8 0 21.333333 8.533333 21.333333 21.333333s-8.533333 21.333333-21.333333 21.333333z"
+                          fill="#000000" p-id="9807"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="common_component common_zindexFocus" id="cardLib_carrier" style="left: 200px; top:400px;">
+        <div id="cardLib_self" class=" common_glass">
+            <div id="cardLib_toolbar" class=" common_glass"><span id="cardLib_toolbar_left"><input id="cardLib_searchInput" class=" common_glass common_btn" placeholder="search"><span class=" common_glass common_btn" id="aacaa18ee8ba4080">
+        <svg t="1661722516265" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1627" width="20" height="20"><path
+                d="M954.4 813.952l-137.664-180.288c48.832-46.656 79.456-112.224 79.456-184.928 0-141.152-114.848-256-256-256s-256 114.848-256 256 114.848 256 256 256c45.472 0 88.096-12.032 125.152-32.896l138.144 180.928c6.304 8.256 15.808 12.608 25.472 12.608 6.752 0 13.6-2.112 19.36-6.56C962.432 848.064 965.12 827.968 954.4 813.952zM448.224 448.704c0-105.888 86.112-192 192-192s192 86.112 192 192-86.112 192-192 192S448.224 554.592 448.224 448.704z"
+                p-id="1628"></path><path d="M320 320 128 320c-17.664 0-32-14.336-32-32s14.336-32 32-32l192 0c17.664 0 32 14.336 32 32S337.664 320 320 320z" p-id="1629"></path><path
+                d="M256 576 128 576c-17.664 0-32-14.304-32-32 0-17.664 14.336-32 32-32l128 0c17.664 0 32 14.336 32 32C288 561.696 273.664 576 256 576z" p-id="1630"></path><path
+                d="M480 800 128 800c-17.664 0-32-14.304-32-32s14.336-32 32-32l352 0c17.664 0 32 14.304 32 32S497.664 800 480 800z" fill="#000000" p-id="1631"></path></svg>
+        </span></span><span class=" common_glass common_btn common_moveBar" id="cardLib_moveBar">
+        <svg t="1661605011102" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1476" width="20" height="20"><path
+                d="M219.428571 585.142857c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142858-73.142857-36.571429-73.142857-73.142858-73.142857z m585.142858-146.285714c36.571429 0 73.142857-36.571429 73.142857-73.142857s-36.571429-73.142857-73.142857-73.142857-73.142857 36.571429-73.142858 73.142857 36.571429 73.142857 73.142858 73.142857zM219.428571 292.571429c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142858-73.142857-36.571429-73.142857-73.142858-73.142857z m585.142858 292.571428c-36.571429 0-73.142857 36.571429-73.142858 73.142857s36.571429 73.142857 73.142858 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857zM512 292.571429c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857z m0 292.571428c-36.571429 0-73.142857 36.571429-73.142857 73.142857s36.571429 73.142857 73.142857 73.142857 73.142857-36.571429 73.142857-73.142857-36.571429-73.142857-73.142857-73.142857z"
+                fill="#000000" p-id="1477"></path></svg></span><span id="cardLib_toolbar_right"><span class=" common_glass common_btn" id="d248b20d08704644">
+        <!--?xml version="1.0" encoding="UTF-8"?--><svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path
+                    d="M32 4H16L20 7L16 20C16 20 10 24 10 28H20L24 44L28 28H38C38 24 34 21.1667 32 20L28 7L32 4Z" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span><span class=" common_glass common_btn" id="4d88f18d55d94807">
+<!--?xml version="1.0" encoding="UTF-8"?--><svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 8L40 40" stroke="#333" stroke-width="4" stroke-linecap="round"
+                                                                                                                                                stroke-linejoin="round"></path><path d="M8 40L40 8" stroke="#333" stroke-width="4"
+                                                                                                                                                                                     stroke-linecap="round"
+                                                                                                                                                                                     stroke-linejoin="round"></path></svg>
+</span></span></div>
+            <div id="cardLib_container" class=" common_glass">
+                <div id="cardLib_card_item">
+                    <div id="cardLib_card_content" class=" common_glass"><img src="https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" id="143e22a51e5d4abd"><span id="da82a95b4b974441">1231231231 aa a a a a a</span>
+                    </div>
+                    <div id="cardLib_card_btns">
+                        <div class=" common_glass common_btn" id="f10d9ae6805d4b8a">
+
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 11L4 24L14 37H44V11H14Z" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M21 19L31 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M31 19L21 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                        <div class=" common_glass common_btn" id="f3b04c13a53d421d">
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 42H6V26" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M26 6H42V22" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div id="cardLib_card_item">
+                    <div id="cardLib_card_content" class=" common_glass"><img src="https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" id="9460f3612563480d"><span id="c8a6b8b00e214be2">1231231231 aa a a a a a</span>
+                    </div>
+                    <div id="cardLib_card_btns">
+                        <div class=" common_glass common_btn" id="a5ad62cc21c74969">
+
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 11L4 24L14 37H44V11H14Z" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M21 19L31 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M31 19L21 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                        <div class=" common_glass common_btn" id="805cfdd334294718">
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 42H6V26" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M26 6H42V22" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div id="cardLib_card_item">
+                    <div id="cardLib_card_content" class=" common_glass"><img src="https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" id="189fae1f8efb46d7"><span id="3d34519044794a9f">1231231231 aa a a a a a</span>
+                    </div>
+                    <div id="cardLib_card_btns">
+                        <div class=" common_glass common_btn" id="fc51c0afa8674e03">
+
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 11L4 24L14 37H44V11H14Z" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M21 19L31 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M31 19L21 29" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                        <div class=" common_glass common_btn" id="223d65d30b14427c">
+                            <!--?xml version="1.0" encoding="UTF-8"?-->
+                            <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 42H6V26" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <path d="M26 6H42V22" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

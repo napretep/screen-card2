@@ -1,8 +1,10 @@
 ﻿module app.common.storageTypes
+open System
 open Chrome
 open Elmish.React
 open app.common.funcs
 open app.common.obj
+
 open Fable.Core
 open Fable.Core.JS
 open Fable.Core.JsInterop
@@ -55,17 +57,17 @@ module Save=
     } 
   
   type Card={
-    Id:string
-    url:string
-    webScrollTo:float*float
-    majorKind:SaveKind
-    createTime:float //时间戳
-    editTime:float //时间戳
-    fields:CardField array
-    pin:float // 0 page 1 screen 2 tab
-    position:float*float //x,y 是client bounding rect 的位置
-    size:float*float
-    show:bool//关闭后通常不会show
+    mutable Id:string
+    mutable url:string
+    mutable webScrollTo:float*float
+    mutable majorKind:SaveKind
+    mutable createTime:float //时间戳
+    mutable editTime:float //时间戳
+    mutable fields:CardField array
+    mutable pin:float // 0 page 1 screen 2 tab
+    mutable position:float*float //x,y 是client bounding rect 的位置
+    mutable size:float*float
+    mutable show:bool//关闭后通常不会show
   }
 
   // type CardLib = {
@@ -143,8 +145,24 @@ type DataStorage =
       
     static member delMany (key: string array) =
       chromeStorage.local.remove (U2.Case2 (ResizeArray key))
-      
-      
+    static member readCardLib =
+      DataStorage.read([|CardLib.S|]).``then``(
+        fun maybeData->
+          maybeData[CardLib.S]|> Option.map (fun e->
+            let data = (e):?>(Save.CardLib)
+            data  
+            )
+      )
+    static member readCards (card_ids:string array)=
+      DataStorage.read(card_ids).``then``(
+        fun maybeData ->
+          card_ids|>Seq.map(fun card_id ->
+              maybeData[card_id]|>Option.map (fun e->
+                let card = e:?> Save.Card
+                card
+            ) 
+        )
+      )
     static member clear = chromeStorage.local.clear ()
 
 // type Continuation =

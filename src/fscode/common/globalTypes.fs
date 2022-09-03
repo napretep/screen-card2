@@ -88,6 +88,8 @@ type GlobalEvent={
   drawBegin:Event<unit>
   screenCapBegin:Event<string> //string 是 card id
   screenCapOk:Event<unit> // card id * dataurl 不传播数据, 数据通过globalstate传播
+  openCardFromDB:Event<string> // string 为card id
+  deleteCardInDB:Event<string>
 }
 with
   static member init =
@@ -98,6 +100,8 @@ with
       drawBegin = Event<unit>()
       screenCapBegin=Event<string>()
       screenCapOk=Event<_>()
+      openCardFromDB=Event<string>() // string 为card id
+      deleteCardInDB=Event<string>()
     }
 
 

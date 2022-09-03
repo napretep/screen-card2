@@ -31,6 +31,9 @@ type [<StringEnum>] CssClass =
     |CardLib_toolbar
     |CardLib_toolbar_left
     |CardLib_toolbar_right
+    |CardLib_toolbar_right_pin
+    |CardLib_toolbar_right_close
+    |CardLib_moveBar
     |CardLib_container
     |CardLib_card_item
     |CardLib_card_content
@@ -179,7 +182,7 @@ overflow: auto;
 	resize:none;
 	outline:none;
 	flex:1 0 auto;
-	font-size: 1.25rem;
+	font-size: 1rem;
 	font-family: "Microsoft JhengHei Light";
 	width: 1px;
 }}
@@ -215,21 +218,21 @@ overflow: auto;
 
 let cardLibStyle = $"""
 
-#{CssClass.CardLib_toolbar}{{
+#{CardLib_toolbar}{{
 	display:flex;
 	justify-content: space-between;
 	align-items:center;
 }}
-#{CssClass.CardLib_toolbar_left}{{
+#{CardLib_toolbar_left}{{
 	display:flex;
 	align-items:center;
 	min-width:30%%;
 }}
-#{CssClass.CardLib_toolbar_right}{{
+#{CardLib_toolbar_right}{{
 	display:flex;
 	align-items:center;
 }}
-#{CssClass.CardLib_container}{{
+#{CardLib_container}{{
 	margin:2px;
 	display:flex;
 	justify-content: space-around;
@@ -243,40 +246,45 @@ let cardLibStyle = $"""
 
 {makeScrollBar $"#{CardLib_container}"}
 
-#{CssClass.CardLib_card_item}{{
+#{CardLib_card_item}{{
 	display:flex;
-	width:235px;
-	height:45px;
+	max-width:200px;
+	height:40px;
 	margin:2px;
-	align-items:stretch;
+	align-items: center;
 }}
-#{CssClass.CardLib_card_content}>img{{
-	width:100%%;
+#{CardLib_card_content}>img{{
 	object-fit: cover;
 	overflow:hidden;
 }}
-#{CssClass.CardLib_card_content}{{
+#{CardLib_card_content}{{
 	display:flex;
 	overflow:hidden;
 	height: 100%%;
 	align-items:center;
 }}
-#{CssClass.CardLib_card_btns}{{
+#{CardLib_card_btns}{{
 	height:auto;
 	display:flex;
 	flex-direction: column;
 	align-items:stretch;
 	justify-content: space-between;
 }}
-#{CssClass.CardLib_card_btns}>span{{
+#{CardLib_card_btns}>span{{
 flex-grow: 2;
 }}
-#{CssClass.CardLib_self}{{
+#{CardLib_self}{{
 }}
-#{CssClass.CardLib_searchInput}{{
+#{CardLib_searchInput}{{
 height:20px;
 width:1px;
 flex-grow:1;
+resize:none;
+outline:none;
+background:transparent;
+border:0;
+padding:0;
+
 }}
 
 """
@@ -306,7 +314,7 @@ padding:4px;
 .{Common_absolute}{{
  position:absolute;
 }}
-.{CssClass.Common_glass}{{
+.{Common_glass}{{
  backdrop-filter: blur(25px) saturate(200%%) ;
 -webkit-backdrop-filter: blur(25px) saturate(200%%);
  background-color: transparent;
@@ -314,24 +322,24 @@ padding:4px;
 /*filter: drop-shadow(1px 1px 1px #00000030);*/
 
 }}
-.{CssClass.Common_Shadow}{{
+.{Common_Shadow}{{
     box-shadow: 0px 0px 8px;
 }}
-.{CssClass.Common_backdropBlur}{{
+.{Common_backdropBlur}{{
     backdrop-filter:blur(20px);
 }}
-.{CssClass.Common_component}{{
+.{Common_component}{{
     position:fixed;
     background-color:#ffffff30;
     /*background-image: linear-gradient(180deg, #2af59820 0%%, #009efd20 100%%);
     background: linear-gradient(to bottom, #D5DEE7 0%%, #E8EBF2 50%%, #E2E7ED 100%%), linear-gradient(to bottom, rgba(0,0,0,0.02) 50%%, rgba(255,255,255,0.02) 61%%, rgba(0,0,0,0.02) 73%%), linear-gradient(33deg, rgba(255,255,255,0.20) 0%%, rgba(0,0,0,0.20) 100%%); background-blend-mode: normal,color-burn;*/
     
 }}
-.{CssClass.Common_fixed}{{
+.{Common_fixed}{{
     position:fixed;
 }}
 
-.{CssClass.Common_btn}{{
+.{Common_btn}{{
     display:flex;
     align-items:center;
     justify-content:center;
@@ -339,27 +347,27 @@ padding:4px;
     height:{btnSize}px;
 }}
 
-.{CssClass.Common_btn}:hover{{
+.{Common_btn}:hover{{
     background-image: linear-gradient(to top, #accbee40 0%%, #e7f0fd40 100%%);
     cursor:pointer;
 }}
-.{CssClass.Common_btn}:active{{
+.{Common_btn}:active{{
    background-image: linear-gradient(to top, #6a85b640 0%%, #bac8e040 100%%);
    cursor:pointer;
 }}
-.{CssClass.AssistDot_self}{{
+.{AssistDot_self}{{
     
     display:flex;
     flex-direction: column;
 }}
 
-.{CssClass.Common_displayNone}{{
+.{Common_displayNone}{{
     display:none;
 }}
 .{Common_invisible}{{
 	
 }}
-.{CssClass.Common_textArea}{{
+.{Common_textArea}{{
 resize:none;
 outline:none;
 padding:5px;
@@ -367,7 +375,7 @@ background:transparent;
 border:0;
 }}
 
-.{CssClass.Common_moveBar}{{
+.{Common_moveBar}{{
 width:60px;
 position: absolute;
 top:0;

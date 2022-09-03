@@ -295,14 +295,11 @@ baseElem.appendChild AssistDot.view.element.Value |> ignore
 
 
 let cardLib = CardLib.Init globalCore (pointF.set 200 200)
-
 AssistDot.Subscribe.OpenCardLib.Add (fun ()->
   console.log "opencardlib"
   if cardLib.state.IsShow then
-    cardLib.state.IsShow<-false
     cardLib.op_view.hide
   else
-    cardLib.state.IsShow<-true
     cardLib.op_view.show
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
@@ -359,7 +356,8 @@ let ReadDisplayCardFromDB() =
     data|>Option.iter(
       fun aCard->
         let card=aCard:?>Save.Card
-        Card.load globalCore card|>ignore
+        if card.show then 
+          Card.load globalCore card|>ignore
       )
   
   DataStorage.read([|window.location.href|]).``then``
