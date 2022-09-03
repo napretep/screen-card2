@@ -1,5 +1,4 @@
 ﻿module app.common.styleSheet
-open Elmish.React
 open Fable.Core
 
 // [<RequireQualifiedAccess>]

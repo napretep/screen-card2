@@ -2,7 +2,6 @@
 
 open Browser.Dom
 open Browser.Types
-open Feliz
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Control
 open app.common.DSL

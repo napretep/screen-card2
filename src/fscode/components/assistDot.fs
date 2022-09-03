@@ -3,13 +3,6 @@ open Browser.Types
 open Browser.Dom
 open Fable.Core
 open Fable.Core.JsInterop
-open Fable.React
-open Fable.React.Props
-open Feliz.DaisyUI
-open Feliz
-open Feliz.ReactApi
-open Elmish
-open Elmish.React
 open app.common
 open funcs
 open obj

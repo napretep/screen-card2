@@ -1,22 +1,18 @@
 ﻿module app.common.funcs
 
 open System.Text.RegularExpressions
-open Feliz
-open Elmish.React
-open Elmish
+
 open System
 open Browser.Types
 open Browser
 open Browser.Dom
 open Browser.Css
 open Chrome
-open Fable.React
 open Microsoft.FSharp.Core
 open Fable.Core.JsInterop
 open Option
 open Fable.Core
 open Fable.Core.JS
-open Fetch
 open app.common.obj
 open app.common.obj.Geometry
 open app.common.styleSheet
@@ -174,21 +170,10 @@ type TabEventHandleWrapper =
 
 let AsStr  (li:CssClass seq) =
         li|> Seq.map (fun e-> e.ToString())|> Seq.toList
-let createEl (reactEl:IReactProperty list -> Fable.React.ReactElement) (classes:CssClass seq) (children:ReactElement seq)= 
-    reactEl [
-              prop.classes (AsStr classes)
-              prop.children children
-    ]
+
 
 // let Div classes kids =  createEl Html.div classes kids
 
-let fetchContent url (El:HTMLElement)= 
-    promise {
-        let! res = fetch url []
-        let! content = res.text ()
-        El.innerText <- content
-        return content
-    }
 
 let newGuid() = Guid.NewGuid().ToString().Replace("-","")[0..15]
 

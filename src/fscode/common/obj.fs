@@ -3,8 +3,6 @@ open System.Collections.Generic
 open Browser.Types
 open Fable.Core
 open Chrome
-open Feliz.style
-
 
 // type jsNumber = |Int of int |Float of float
 // type jsType =

@@ -1,4 +1,6 @@
 module content
+open System
+open System.Collections.Generic
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Control
 open app.common
@@ -18,6 +20,7 @@ open FSharp.Core
 open FSharp.Control
 open app.components.cardLibrary
 open app.components.cardTemplate
+open app.components.cardTemplate.Card
 
 let MsgReceivedCallback callback =
   ChromeMsg.ReceivedCallback RuntimeMsgActor.Tab callback
@@ -324,18 +327,27 @@ window.onmousedown <- fun e->
   globalCore.event.mouseDown.Trigger(e)
   ()
 let ReadDisplayCardFromDB() =
+  let allTranTabCard=
+        globalCore.hashMap.Keys|>Seq.filter(fun key->
+        let card = globalCore.hashMap[key]:?>Card.Core
+        card.state.pinState=PinState.TransTab
+        )|>Seq.toList
+      
+  
   //读取全部的 TransTab 并展示
   let loadTransTab (data:obj option)=
     data|>Option.iter(
       fun aCard->
         let card=aCard:?>Save.Card
-        if card.pin = 2 then Card.load globalCore card|>ignore
-        
+        if card.pin = 2 then Card.load globalCore card|>ignore 
       )
+    
   let maybeLoadCards (card_ids:string array) (f:obj option->unit)=
     console.log card_ids
     DataStorage.read(card_ids).``then``(
       fun maybeData->
+        allTranTabCard|>List.filter(fun old-> card_ids|>Array.contains old |> not)
+        |>List.map(fun i -> globalCore.removeMember  globalCore.hashMap[i])|>ignore
         card_ids|>Array.map (fun card_id-> f(maybeData[card_id])
           )
       )

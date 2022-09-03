@@ -1,7 +1,6 @@
 ﻿module app.common.storageTypes
 open System
 open Chrome
-open Elmish.React
 open app.common.funcs
 open app.common.obj
 

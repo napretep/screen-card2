@@ -46,7 +46,7 @@ module Card =
       |0 -> PinToPage
       |1 -> AmongScreen
       |2 -> TransTab
-      
+    member this.S=this.ToString()  
   end
   type FieldState={
     mutable expandState:ExpandState
@@ -558,9 +558,14 @@ module Card =
           let del = field.hashmap.[CardField_btns_del.S].element.Value
           let expand = field.hashmap.[CardField_btns_expand.S].element.Value
           let link = field.hashmap.[CardField_btns_link.S].element.Value
+          if state.contentKind=0 then
+            let content_text = field.element.Value.querySelector($"#{CardField_content_text.S}"):?>HTMLTextAreaElement
+            content_text.onchange<- fun e->
+                state.content<-content_text.value
           link.onclick <- fun e-> window.``open``(state.url)|>ignore
           del.onclick <- fun e-> this.delFields [field]|>ignore
           
+         
           expand.onclick <- fun e->
             match state.expandState with
             |Collapse -> field.element.Value.classList.add CardField_expanded.S
@@ -590,6 +595,7 @@ module Card =
     let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
     let addTxt = core.view.hashmap[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
+    
     let cardBody = core.view.hashmap[Card_body.S]
     let self = core.view.element.Value
     self.onclick <- fun e->
@@ -598,7 +604,9 @@ module Card =
       JS.setTimeout (fun e->core.op_state.save |> ignore) 100
       
       ()
-      
+    
+    
+    
     addTxt.onclick<- fun e->
       
       core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
