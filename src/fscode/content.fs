@@ -21,6 +21,7 @@ open FSharp.Control
 open app.components.cardLibrary
 open app.components.cardTemplate
 open app.components.cardTemplate.Card
+open app.components.tooltip
 
 let MsgReceivedCallback callback =
   ChromeMsg.ReceivedCallback RuntimeMsgActor.Tab callback
@@ -104,26 +105,27 @@ module AssistDot =
       Div [ Classes <<AsStr <|[CssClass.Common_glass]
             Id CssClass.AssistDot_self
              ] [
-            Div [ Classes <<AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
-                  InnerHtml <| ICON.HorizontalMoveBar []
-                  Id CssClass.Common_moveBar
-                  OnMouseDown <| fun e-> Event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
-                   ] [  ]
-            Div [ Classes <<AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
-                  InnerHtml <| ICON.close []
-                  OnClick <| fun e-> Event.Close.Trigger()
-                   ] [  ]
-            Div [Classes << AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
-                 InnerHtml <| ICON.bookshelf []
-                 OnClick <| fun e->  Event.OpenCardLib.Trigger()
-                 ] []
-            Div [Classes << AsStr <| [CssClass.Common_glass;CssClass.Common_btn]
-                 InnerHtml <| ICON.newCard []
-                 OnClick <| fun e-> Event.CreateCard.Trigger()
-                 ] []
+            mkBtn ICON.HorizontalMoveBar AssistDot_btn_moveBar "拖动" "l" 
+            mkBtn ICON.close AssistDot_btn_close "临时关闭" "l"
+            mkBtn ICON.bookshelf AssistDot_btn_cardLib "打开卡片库" "l"
+            mkBtn ICON.newCard AssistDot_btn_newCard "新建卡片" "l"
           ]
     ]
-  let view = build atom
+  let view =
+    let view = build atom
+    let close = view.hashmap[AssistDot_btn_close.S].element.Value    
+    let cardLib = view.hashmap[AssistDot_btn_cardLib.S].element.Value
+    let newCard = view.hashmap[AssistDot_btn_newCard.S].element.Value
+    let moveBar = view.hashmap[AssistDot_btn_moveBar.S].element.Value
+    close.onclick<- fun e->
+      Event.Close.Trigger()
+    cardLib.onclick<- fun e->
+      Event.OpenCardLib.Trigger()
+    newCard.onclick<- fun e->
+      Event.CreateCard.Trigger()
+    moveBar.onmousedown<- fun e->
+      Event.MoveBegin.Trigger(pointF.set e.clientX e.clientY)
+    view
   let getViewBoundingRect() =
     view.element.Value.getBoundingClientRect()
     
@@ -255,11 +257,7 @@ let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
     let btns = globalCore.state.FrameDiv.children[1]:?>HTMLElement
     btns.classList.remove Common_displayNone.S |> ignore
     globalCore.state.FrameDiv.children[2].classList.remove Common_displayNone.S |> ignore
-    let kids = globalCore.root.children
-    for i=0 to  kids.length-1 do
-      let kid = kids[i]
-      kid.classList.remove Common_displayNone.S
-      ()
+    
     // root.classList.remove Common_mask.S
     root |> Op_element.delMask |> Op_element.delFixed
     
@@ -343,11 +341,15 @@ let ReadDisplayCardFromDB() =
       )
     
   let maybeLoadCards (card_ids:string array) (f:obj option->unit)=
-    console.log card_ids
     DataStorage.read(card_ids).``then``(
       fun maybeData->
-        allTranTabCard|>List.filter(fun old-> card_ids|>Array.contains old |> not)
-        |>List.map(fun i -> globalCore.removeMember  globalCore.hashMap[i])|>ignore
+        // 过滤出没有随行的卡片删掉
+        allTranTabCard|>List.filter( 
+          fun old-> card_ids|>Array.contains old |> not)
+          |>List.map(fun i ->if globalCore.hashMap.Keys.Contains i then
+                              globalCore.removeMember  globalCore.hashMap[i]|>ignore 
+                   )|>ignore
+        // 应用自定义f
         card_ids|>Array.map (fun card_id-> f(maybeData[card_id])
           )
       )
@@ -380,30 +382,7 @@ let ReadDisplayCardFromDB() =
   )
   |>ignore
   
-  // //读取卡片库
-  // DataStorage.read([|CardLib.S|]).``then``(
-  //   
-  //   )
   
-  //读取全部的当前页面的内容
-  
-  
-  // DataStorage.read([|SaveKind.CardLib.S|])
-  //   .``then``(fun data->
-  //     data[SaveKind.CardLib.S]|>Option.iter (fun value ->
-  //         let cardlib = value:?>Save.CardLib
-  //         let card = cardlib.cards[0]
-  //         if card.pin = 2 then 
-  //           Card.load globalCore cardlib.cards[0]
-  //         else
-  //    
-  //           ()
-  //         console.log cardlib
-  //         
-  //     )
-  //     
-  //     )
-  |>ignore
 let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMsgActor.Tab}
 chromeRuntime.onMessage.addListener (
   MsgReceivedCallback (fun msg ->
@@ -447,6 +426,11 @@ chromeRuntime.onMessage.addListener (
 
 
 globalCore.event.screenCapOk.Publish.Add (fun ()->
+  let kids = globalCore.root.children
+  for i=0 to  kids.length-1 do
+    let kid = kids[i]
+    kid.classList.remove Common_displayNone.S
+    ()
   let card_id = globalCore.state.ScreenCapCardId.Value
   let dataurl = globalCore.state.ScreenCapDataUrl
   let cardCore = globalCore.hashMap[card_id]:?>Card.Core

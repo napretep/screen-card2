@@ -49,7 +49,7 @@ with
       Div [Id CapturingFrame_btns; classes [Common_displayNone]] [
           Span [Id CapturingFrame_btns_no
                 classes [Common_btn;Common_glass;]
-                InnerHtml <| ICON.close []
+                InnerHtml <| ICON.close
                 ] []
           Span [Id CapturingFrame_btns_ok
                 classes [Common_btn;Common_glass;]
@@ -58,7 +58,7 @@ with
         ]
       Span [
         Styles ["justify-content: center;"]
-        classes [Common_btn;Common_moveBar;Common_glass;Common_displayNone]; InnerHtml <| ICON.HorizontalMoveBar []
+        classes [Common_btn;Common_moveBar;Common_glass;Common_displayNone]; InnerHtml <| ICON.HorizontalMoveBar
       ] []
     ]
      )
@@ -115,7 +115,7 @@ with
   member inline this.addMember (core:ICore) =
     this.root.appendChild core.view.element.Value |>ignore
     this.hashMap <- this.hashMap.Add (core.Id,core)
-    DataStorage.appendUnique CardLib.S core.Id
+    DataStorage.appendToListUnique CardLib.S core.Id
   member inline this.removeMember (core:ICore) =
     this.root.removeChild core.view.element.Value |>ignore
     this.hashMap.Remove core.Id
@@ -123,12 +123,14 @@ with
     let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
     DataStorage.set (TransTab.S) transTab |>ignore
     ()
-  member this.AppendToTransTab (data:string)=
+  member this.AppendToTransTab (card_id:string)=
     let transTab  = this.state.cardNeedDisplay.transTab
-    if transTab|>List.contains data |> not then
-      this.state.cardNeedDisplay.transTab<-data::transTab
+    if transTab|>List.contains card_id |> not then
+      this.state.cardNeedDisplay.transTab<-card_id::transTab
+    
     this.saveTransTab
-  member this.RemoveFromTransTab (data:string)=
+  member this.RemoveFromTransTab (card_id:string)=
     let transTab  = this.state.cardNeedDisplay.transTab
-    this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>data)
+    this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>card_id)
+    
     this.saveTransTab

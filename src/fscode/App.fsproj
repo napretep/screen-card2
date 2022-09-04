@@ -19,12 +19,14 @@
     
     <Compile Include="common\jsBind.fs" />
     <Compile Include="common\btns.fs" />
-    
-    
+
+    <Compile Include="components\tooltip.fs" />
     <Compile Include="components\assistDot.fs" />
     <Compile Include="components\cardTemplate.fs" />
     <Compile Include="components\cardGenerater.fs" />
     <Compile Include="components\cardLibrary.fs" />
+    <Compile Include="components\button.fs" />
+    
     <Compile Include="backend.fs" />
     <Compile Include="content.fs" />
     <Compile Include="popup.fs" />

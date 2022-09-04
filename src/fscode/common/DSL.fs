@@ -27,6 +27,7 @@ type Prop =
   |InnerText of string
   |CSSSize of  string*string // width*height
   |CSSPosition of string*string //left*top
+  |CSSTransform of string
   |PlaceHolder of string 
   |OnMouseDown of (MouseEvent->unit)
   |OnMouseUp of (MouseEvent->unit)
@@ -34,6 +35,7 @@ type Prop =
   |OnClick of (MouseEvent->unit)
   |OnDbClick of (MouseEvent->unit)
   |TextAreaValue of string
+  |Alt of string
   
   
 type [<StringEnum>] Tag =
@@ -65,7 +67,6 @@ with
   }
   member this.DelKid (kids:Brick list) =     
     this.DelKidFromDom>>this.DelKidFromBrick>>this.DelKidFromHashMap
-
   member private this.DelKidFromDom kids =
     kids |> List.map (fun (kid:Brick)->
       kid.element.Value.remove()
@@ -91,7 +92,8 @@ with
                      this.hashmap.Add (e.Id,e)  
                      e
                      )  
-    
+  member this.select (selector:string) =
+    this.element.Value.querySelector(selector)
 end
 let getElementFromBrick (brick:Brick) (query:string):HTMLElement=
   brick.element.Value.querySelector(query):?>HTMLElement
@@ -105,6 +107,7 @@ let Canvas = Brick.Builder Canvas
 let classes objs = Classes << AsStr <| objs
 let Id (objs) = //Id <| List.head <| AsStr <| objs
     [objs] |> AsStr |> List.head |> Id
+
 let setUpProperty (node:Brick) (root:Brick) =
  node.element |> Option.iter(fun element ->
    node.property |> List.iter (fun (p:Prop)->
@@ -122,6 +125,7 @@ let setUpProperty (node:Brick) (root:Brick) =
        element.style.top <-y
      |TextAreaValue s -> (element:?>HTMLTextAreaElement).value <- s
      |PlaceHolder value ->  (element:?>HTMLTextAreaElement).placeholder <- value
+     |CSSTransform value -> element.style.transform<-value
      |OnClick mouseEventFunc -> element.onclick <- mouseEventFunc
      |OnDbClick mouseEventFunc -> element.ondblclick <- mouseEventFunc
      |OnMouseDown mouseEventFunc -> element.onmousedown <- mouseEventFunc

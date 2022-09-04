@@ -12,8 +12,19 @@
 
 </head>
 <body>
-<img src="vite.svg" alt="">
+<img src="logo_minimal.svg" alt="">
+<canvas></canvas>
 
+<script>
+    window.onload = (e)=>{
+        let canvas = document.querySelector("canvas")
+        let img = document.querySelector("img")
+        canvas.width = img.getBoundingClientRect().width
+        canvas.height = img.getBoundingClientRect().height
+        let ctx = canvas.getContext("2d")
+        ctx.drawImage(img,0,0)
+    }
+</script>
 
 </body>
 </html>

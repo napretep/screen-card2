@@ -1,0 +1,32 @@
+<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+ <g>
+
+  <g stroke="null" id="svg_11">
+      <defs>
+          <filter x="0" y="0" width="1" height="1" id="solid">
+              <feFlood flood-color="#3390FF" result="bg"></feFlood>
+              <feMerge>
+                  <feMergeNode in="bg"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+              </feMerge>
+          </filter>
+      </defs>
+
+<!--      <svg stroke="null" y="0" x="0" id="svg_1" viewBox="0 0 500 500">-->
+    <g fill-rule="evenodd" fill="none" id="svg_2">
+
+     <rect stroke="null" height="300" width="300" y="0" x="0" transform="rotate(20 150,150) scale(0.7) translate(75,75)" fill="#c6e5f3" id="svg_9"></rect>
+     <g stroke="null" fill="#000" id="svg_8" transform="translate(-50,-50) scale(0.83)">
+      <path stroke="null" id="svg_15" d="m154,372l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6zm-28,28l0,16l-6,0l0,-16l6,0zm64,224l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6zm-64,64l0,16l-6,0l0,-16l6,0zm100,188l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6zm-100,100l0,16l-6,0l0,-16l6,0zm136,152l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6zm-136,172l0,16l-6,0l0,-16l6,0zm0,36l0,16l-6,0l0,-16l6,0zm0,-72l0,16l-6,0l0,-16l6,0zm252,-108l0,16l-6,0l0,-16l6,0zm0,36l0,16l-6,0l0,-16l6,0zm0,36l0,16l-6,0l0,-16l6,0zm0,72l0,16l-6,0l0,-16l6,0zm0,36l0,16l-6,0l0,-16l6,0zm0,-72l0,16l-6,0l0,-16l6,0zm-80,116l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6zm36,252l16,0l0,6l-16,0l0,-6zm0,-252l16,0l0,6l-16,0l0,-6z"></path>
+      <path stroke="null" id="svg_16" fill-rule="nonzero" d="m117,129l12,0l0,-12l-12,0l0,12zm-4,-16l20,0l0,20l-20,0l0,-20z"></path>
+      <path stroke="null" id="svg_17" fill-rule="nonzero" d="m369,129l12,0l0,-12l-12,0l0,12zm-4,-16l20,0l0,20l-20,0l0,-20z"></path>
+      <path stroke="null" id="svg_18" fill-rule="nonzero" d="m117,380l12,0l0,-12l-12,0l0,12zm-4,-16l20,0l0,20l-20,0l0,-20z"></path>
+      <path stroke="null" id="svg_19" fill-rule="nonzero" d="m369,368l0,12l12,0l0,-12l-12,0zm-4,-4l20,0l0,20l-20,0l0,-20z"></path>
+     </g>
+
+    </g>
+<!--   </svg>-->
+  </g>
+  <text  font-weight="bold" stroke="#000" xml:space="preserve" text-anchor="start" font-family="'Fira Mono', Courier, monospace" font-size="270" id="svg_24" y="50%" x="50%" transform="translate(-72,100)" stroke-opacity="null" stroke-width="0" fill="#3390FF">S</text>
+ </g>
+</svg>

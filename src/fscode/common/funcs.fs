@@ -233,3 +233,7 @@ type Op_element =
     static member delFixed (E:HTMLElement) =
         E.style.position <- ""
         E
+    
+    static member switchClass  (E:HTMLElement) add remove =
+        E.classList.remove remove
+        E.classList.add add

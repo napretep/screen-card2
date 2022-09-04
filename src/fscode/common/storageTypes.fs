@@ -115,7 +115,7 @@ module Save=
 type DataStorage =
     static member getString (keys:SaveKind array)=
       keys |> Seq.map (fun key -> key.S )|>Seq.toArray |> ResizeArray<string>
-    static member appendUnique (key:string) (value:obj)=
+    static member appendToListUnique (key:string) (value:obj)=
       chromeStorage.local.get(ResizeArray[key]).``then``(
         fun data->
             let result = 
@@ -130,11 +130,22 @@ type DataStorage =
                 newdata
             DataStorage.set key (result|>Seq.toArray)
         )|>ignore
-        
-      ()
+
     //read 是异步的  
     static member read(key: string array) =
           chromeStorage.local.get(ResizeArray key)
+    static member removeFromList (key:string) (value:string) =
+      
+      DataStorage.read([|key|]).``then``(
+        fun maybeData ->
+          let data =
+            match maybeData[key] with
+            |Some d-> d:?> string list
+            |_ -> []
+          let newData = if data |>List.contains value then data else  value::data
+          DataStorage.set key newData
+      )|>ignore
+      ()
     static member readAll = chromeStorage.local.get()
     static member set (key:string) (value:obj) =
       chromeStorage.local.set(kv key value)

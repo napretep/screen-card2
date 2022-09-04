@@ -75,15 +75,15 @@ module CardLib =
           ]
           Span [classes<| [Common_glass;Common_btn;Common_moveBar]
                 Id CardLib_moveBar
-                InnerHtml <| ICON.HorizontalMoveBar []
+                InnerHtml <| ICON.HorizontalMoveBar
           ] []
           Span [Id CardLib_toolbar_right ] [
             Span [classes [Common_glass;Common_btn]
-                  InnerHtml <| ICON.pin []
+                  InnerHtml <| ICON.pin
                   Id CardLib_toolbar_right_pin
                   ] []
             Span [classes [Common_glass;Common_btn]
-                  InnerHtml <| ICON.close []
+                  InnerHtml <| ICON.close
                   Id CardLib_toolbar_right_close
                   ] []
           ]

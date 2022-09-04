@@ -14,6 +14,7 @@ open Browser.Types
 open Browser
 open Fable.Core
 open FSharp.Control
+open app.components.tooltip
 
 
 module Card =
@@ -48,6 +49,10 @@ module Card =
       |2 -> TransTab
     member this.S=this.ToString()  
   end
+  // type FieldState (Id)=
+  //   
+  //   member val Id:string =Id with get,set
+    
   type FieldState={
     mutable expandState:ExpandState
     mutable IsMoving :bool
@@ -187,25 +192,30 @@ module Card =
     Div [
       classes [CardField_self]
     ] [
-      Div [classes [Common_glass;Common_btn];Id CardField_dragBar
-           InnerHtml <| ICON.VerticalMoveBar [] 
-           ] []
+      // Div [classes [Common_glass;Common_btn];Id CardField_dragBar
+      //      InnerHtml <| ICON.VerticalMoveBar  
+      //      ] []
+      mkBtn ICON.VerticalMoveBar CardField_moveBar "拖动" "r"
       Div [classes [Common_glass];Id CardField_content] [
         match content with
         |Text s -> TextArea [classes [Common_textArea;Common_glass];Id CardField_content_text
                              TextAreaValue s ] []
-        |Image s-> Img  [Src s;Id CardField_content_img
+        |Image s-> Img  [Src s;Id CardField_content_img ; Alt "no Image"
                          ] []
       ]
       Div [classes [Common_glass;];Id CardField_btns] [
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_link 
-             InnerHtml <| ICON.link 
-             ] []
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_expand
-             InnerHtml <| ICON.expand] []
-        Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
-             InnerHtml <| ICON.del 
-             ] []
+        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_link 
+        //      InnerHtml <| ICON.backlink 
+        //      ] []
+        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_expand
+        //      InnerHtml <| ICON.expand] []
+        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
+        //      InnerHtml <| ICON.del 
+        //      ] []
+        mkBtn ICON.backlink CardField_btns_link  "返回摘录页面" "l"
+        mkBtn ICON.expand CardField_btns_expand  "收/放记录" "l"
+        mkBtn ICON.del CardField_btns_del  "删除记录" "l"
+
       ]
     
   ]
@@ -221,21 +231,28 @@ module Card =
       Div [ classes [Common_glass;];Id Card_self ] [
         Div [ classes [Common_glass];Id Card_header ] [
           Div [classes [Common_glass;Card_header_side_btn];Id Card_header_left_btn] [
-            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addImg
-                  InnerHtml <| ICON.newClip []
-                  ] []
-            Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
-                  InnerHtml <| ICON.newText []
-                  ] []
+            // Span [classes [Common_glass;Common_btn];Id Card_header_btn_addImg
+            //       InnerHtml <| ICON.newClip []
+            //       ] [
+            //   if true then 
+            //     console.log"hello true tooltip"
+            //     Tooltip.el ["test";"l"]
+            // ]
+            mkBtn ICON.newClip Card_header_btn_addImg "+图片记录" "t"
+            mkBtn ICON.newText Card_header_btn_addTxt "+文字记录" "t"
+            // Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
+            //       InnerHtml <| ICON.newText
+            //       ] []
           ]
-          Span [classes [Common_moveBar;Common_glass;Common_btn]
-                Id Card_header_btn_move ; InnerHtml <| ICON.HorizontalMoveBar []] []
+//           Span [classes [Common_moveBar;Common_glass;Common_btn]
+//                 Id Card_header_btn_move ; InnerHtml <| ICON.HorizontalMoveBar ] []
+          mkBtnMoveH Card_header_btn_move 
           Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
-                Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin [] ] []
-                Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.close [] ] []
+                // Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin  ] []
+                // Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.powerOff ] []
+              mkBtn ICON.pin Card_header_btn_pin "" "t"
+              mkBtn ICON.powerOff Card_header_btn_close "不显示卡片" "t"
           ]
-        
-        
         ]
         Div [Id Card_body] [
 
@@ -345,22 +362,25 @@ module Card =
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
       let scrollP =pointF.set window.scrollX window.scrollY
       let pinState = this.env.state.pinState
+      let tooltip = this.env.view.select($"#{Card_header_btn_pin} .{Common_toolTip}"):?>HTMLElement
       let Id' = this.env.Id
       match pinState with
       |PinToPage -> // absolute
         let newp = p + scrollP
-        
         carrier.style.position <- "absolute"
+        tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.appendUnique this.env.state.url Id'
+        DataStorage.appendToListUnique this.env.state.url Id'
       |AmongScreen ->
         carrier.style.position <- "fixed"
+        tooltip.innerText<- "钉在屏幕"
         pointF.setElementPosition carrier p
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.appendUnique this.env.state.url Id'
+        DataStorage.appendToListUnique this.env.state.url Id'
       |TransTab ->
-        carrier.style.position <- "fixed"  
+        carrier.style.position <- "fixed"
+        tooltip.innerText<- "随行模式"
         pointF.setElementPosition carrier p
         
         this.env.env.AppendToTransTab Id'
@@ -482,7 +502,7 @@ module Card =
                        (e.id <> "placeHolder") && (e.id <> field.Id) 
           )
         
-        let moveBar = field.hashmap[CardField_dragBar.S].element.Value
+        let moveBar = field.hashmap[CardField_moveBar.S].element.Value
         let event  = this.env.fieldEvent[field.Id]
         
         moveBar.onmousedown <- fun e->
@@ -558,13 +578,21 @@ module Card =
           let del = field.hashmap.[CardField_btns_del.S].element.Value
           let expand = field.hashmap.[CardField_btns_expand.S].element.Value
           let link = field.hashmap.[CardField_btns_link.S].element.Value
-          if state.contentKind=0 then
+          match state.contentKind with
+          |0.0 ->
             let content_text = field.element.Value.querySelector($"#{CardField_content_text.S}"):?>HTMLTextAreaElement
             content_text.onchange<- fun e->
                 state.content<-content_text.value
+          |1.0 ->
+            let contentImg = field.hashmap[CardField_content_img.S].element.Value
+            contentImg.ondragstart<- fun e-> e.preventDefault()
+          |_ -> ()
+          
+          
           link.onclick <- fun e-> window.``open``(state.url)|>ignore
           del.onclick <- fun e-> this.delFields [field]|>ignore
           
+            
          
           expand.onclick <- fun e->
             match state.expandState with
@@ -620,8 +648,11 @@ module Card =
       console.log "close triggered"
       core.env.RemoveFromTransTab core.Id
       core.state.show<-false
+      
       core.op_state.save
       core.env.removeMember core|>ignore
+      env.root.removeChild core.view.element.Value |>ignore
+      
       core.event.Close.Trigger()
       
     move.onmousedown<- fun e->
@@ -654,8 +685,8 @@ module Card =
       core.op_view.setPinColor
       core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
       
-    core.event.Close.Publish.Add <| fun e->
-      env.root.removeChild core.view.element.Value |>ignore
+    // core.event.Close.Publish.Add <| fun e->
+      
     core.event.MoveBegin.Publish.Add <| fun e->
       let r = view.element.Value.getBoundingClientRect()
       core.state.MoveBeginAt <- MouseDomPoint.set e.left e.top r.left r.top

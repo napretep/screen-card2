@@ -19,12 +19,14 @@ type [<StringEnum>] CssClass =
     |Common_moveBar
     |Common_textArea
     |Common_flex_grow_1
+    |Common_toolTip
     |AssistDot_carrier
     |AssistDot_self
     |AssistDot_btn
-    |AssistDot_close
-    |AssistDot_newCard
-    |AssistDot_cardLib
+    |AssistDot_btn_close
+    |AssistDot_btn_newCard
+    |AssistDot_btn_cardLib
+    |AssistDot_btn_moveBar
     |CardLib_carrier
     |CardLib_self
     |CardLib_toolbar
@@ -46,12 +48,13 @@ type [<StringEnum>] CssClass =
     |Card_header_side_btn
     |Card_header_btn_move
     |Card_header_btn_pin
+    |Card_header_btn_goHome
     |Card_header_btn_close
     |Card_header_btn_addImg
     |Card_header_btn_addTxt
     |Card_body
     |CardField_self
-    |CardField_dragBar
+    |CardField_moveBar
     |CardField_content
     |CardField_content_text
     |CardField_content_img
@@ -98,6 +101,12 @@ let hideScrollBar selector = $"""
 {selector}::-webkit-scrollbar-track {{
 }}
 """
+let addToolTip selector = $"""
+{selector}:hover .{Common_toolTip}{{
+	visibility: visible;
+}} 
+"""
+
 type Str =
     |String of string
     |CssClass of CssClass
@@ -164,6 +173,7 @@ overflow: auto;
 	flex-direction:column;
 	align-items:stretch;
 	justify-content: space-between;
+	z-index:9;
 }}
 #{CardField_content}{{
 	flex:1 0 auto;
@@ -203,7 +213,7 @@ overflow: auto;
 	align-items: center;
 	justify-content: center;
 }}
-#{CardField_dragBar}{{
+#{CardField_moveBar}{{
 	width: 20px;
 	height:auto;
 	display:flex;
@@ -211,6 +221,7 @@ overflow: auto;
 	align-items: center;
 	justify-items: center;
 	justify-content:center;
+	z-index:9;
 }}
 
 """
@@ -275,20 +286,26 @@ flex-grow: 2;
 #{CardLib_self}{{
 }}
 #{CardLib_searchInput}{{
-height:20px;
-width:1px;
-flex-grow:1;
-resize:none;
-outline:none;
-background:transparent;
-border:0;
-padding:0;
-
+	height:20px;
+	width:1px;
+	flex-grow:1;
+	resize:none;
+	outline:none;
+	background:transparent;
+	border:0;
+	padding:0;
 }}
-
 """
 
 let commonStyle = $"""
+.{Common_toolTip}{{
+	visibility: hidden;
+	position: absolute;
+    width: max-content;
+    height: min-content;
+    font-size: 0.5rem;
+    font-family: "Microsoft JhengHei Light";
+}}
 .{Common_zindexFocus}{{
 	z-index:9999999;
 }}
@@ -354,6 +371,9 @@ padding:4px;
    background-image: linear-gradient(to top, #6a85b640 0%%, #bac8e040 100%%);
    cursor:pointer;
 }}
+
+{addToolTip $".{Common_btn}"} 
+
 .{AssistDot_self}{{
     
     display:flex;
