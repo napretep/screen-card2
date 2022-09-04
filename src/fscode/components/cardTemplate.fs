@@ -16,6 +16,9 @@ open Fable.Core
 open FSharp.Control
 open app.components.tooltip
 
+// type Save.Card with
+//   static member read (s:Card.State)=
+//     ()
 
 module Card =
 
@@ -175,6 +178,7 @@ module Card =
       this.show<- card.show
       this.birthUrl <- card.birthUrl
       ()
+
   type Event' = {
     Close :Event<unit>
     MoveBegin:Event<pointF>
@@ -254,7 +258,7 @@ module Card =
           Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
                 // Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin  ] []
                 // Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.powerOff ] []
-              mkBtn ICON.fareWell Card_header_btn_goHome "回家" "t"
+              // mkBtn ICON.fareWell Card_header_btn_goHome "回家" "t"
               mkBtn ICON.pin Card_header_btn_pin "" "t"
               mkBtn ICON.powerOff Card_header_btn_close "关闭" "t"
               
@@ -312,7 +316,7 @@ module Card =
   and  Op_View (env:Core) =
     member val env = env
     member this.getView (name:CssClass) =
-      if this.env.view.hashmap.Keys.Contains name.S then
+      if this.env.view.hashmap.Keys |>Seq.contains name.S then
         Some this.env.view.hashmap[name.S]
       else
         console.log $"{name} 不存在"
@@ -322,12 +326,15 @@ module Card =
       let carrier = this.env.view.element.Value
       let state = this.env.state
       let body = this.env.view.hashmap[Card_body.S].element.Value
-      let gohome = this.getView(Card_header_btn_goHome).Value.element.Value
+      // let gohome = this.getView(Card_header_btn_goHome).Value.element.Value
       let cardBody = this.env.view.hashmap[Card_body.S]
-      if this.env.state.homeUrl = window.location.href then  Op_element.displayNone gohome |> ignore
-      else
-        gohome.onclick <-fun e-> 
-          ()
+      // if this.env.state.homeUrl = window.location.href then
+      //   console.log "this.env.state.homeUrl = window.location.href"
+      //   Op_element.displayNone gohome |> ignore
+      // else
+      //   gohome.onclick <-fun e->
+      //     this.env.env.remo
+      //     ()
       pointF.setElementPosition carrier state.position
       console.log state.size 
       size2d.setElementStyleSize body state.size 
@@ -384,6 +391,7 @@ module Card =
       let pinState = this.env.state.pinState
       let tooltip = this.env.view.select($"#{Card_header_btn_pin} .{Common_toolTip}"):?>HTMLElement
       let Id' = this.env.Id
+      let currentUrl = window.location.href
       match pinState with
       |PinToPage -> // absolute
         let newp = p + scrollP
@@ -391,14 +399,16 @@ module Card =
         tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.moveFromAToBList this.env.state.homeUrl window.location.href Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
+        this.env.state.homeUrl<-currentUrl
         ()
       |AmongScreen ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "钉在屏幕"
         pointF.setElementPosition carrier p
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.moveFromAToBList this.env.state.homeUrl window.location.href Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
+        this.env.state.homeUrl<-currentUrl
         ()
       |TransTab ->
         carrier.style.position <- "fixed"
@@ -602,9 +612,24 @@ module Card =
           let link = field.hashmap.[CardField_btns_link.S].element.Value
           match state.contentKind with
           |0.0 ->
+            let mutable content = ""
+            let rec watch() =
+              if state.content <> content then
+                    content<-state.content
+                    console.log content
+                    setTimeout (fun e->watch()) 1000
+                    ()
+              else
+                console.log "文本更新完成"
+                this.env.op_state.save
+              ()
+                
             let content_text = field.element.Value.querySelector($"#{CardField_content_text.S}"):?>HTMLTextAreaElement
-            content_text.onchange<- fun e->
-                state.content<-content_text.value
+            content_text.onkeyup<- fun e->
+                state.content<- content_text.value
+                watch()
+                ()
+            
           |1.0 ->
             let contentImg = field.hashmap[CardField_content_img.S].element.Value
             contentImg.ondragstart<- fun e-> e.preventDefault()

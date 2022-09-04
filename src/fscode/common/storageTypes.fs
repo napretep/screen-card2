@@ -72,7 +72,7 @@ module Save=
     mutable size:float*float
     mutable show:bool//关闭后通常不会show
   }
-
+  
   // type CardLib = {
   //   majorKind:SaveKind
   //   Id:string
