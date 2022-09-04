@@ -132,11 +132,12 @@ module Card =
     mutable FieldBeginMoveElementAt:float
     mutable createTime:float
     mutable editTime:float
-    mutable url:string
+    mutable homeUrl:string
     mutable webScrollTo:pointF
     mutable position:pointF
     mutable size:size2d
     mutable show:bool
+    mutable birthUrl:string
   }
   with
     static member init =
@@ -153,7 +154,7 @@ module Card =
       FieldBeginMoveMouseAt = -1 
       FieldBeginMoveElementAt = -1
       //save data
-      url = window.location.href
+      homeUrl = window.location.href
       webScrollTo = pointF.set window.scrollX window.scrollY
       createTime= thisTime.valueOf()
       editTime= thisTime.valueOf()
@@ -161,9 +162,10 @@ module Card =
       size=size2d.zero
       position = pointF.zero
       show=true
+      birthUrl=window.location.href
     }
     member this.clone (card:Save.Card) =
-      this.url<-card.url
+      this.homeUrl<-card.homeUrl
       this.webScrollTo<-pointF.fromTuple card.webScrollTo
       this.createTime <-card.createTime
       this.editTime <- card.editTime
@@ -171,6 +173,7 @@ module Card =
       this.size <- size2d.fromTuple card.size
       this.position <- pointF.fromTuple card.position
       this.show<- card.show
+      this.birthUrl <- card.birthUrl
       ()
   type Event' = {
     Close :Event<unit>
@@ -212,8 +215,9 @@ module Card =
         // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
         //      InnerHtml <| ICON.del 
         //      ] []
+        
         mkBtn ICON.backlink CardField_btns_link  "返回摘录页面" "l"
-        mkBtn ICON.expand CardField_btns_expand  "收/放记录" "l"
+        mkBtn ICON.expand CardField_btns_expand  "收起/展开" "l"
         mkBtn ICON.del CardField_btns_del  "删除记录" "l"
 
       ]
@@ -238,8 +242,8 @@ module Card =
             //     console.log"hello true tooltip"
             //     Tooltip.el ["test";"l"]
             // ]
-            mkBtn ICON.newClip Card_header_btn_addImg "+图片记录" "t"
-            mkBtn ICON.newText Card_header_btn_addTxt "+文字记录" "t"
+            mkBtn ICON.newClip Card_header_btn_addImg "+图片" "t"
+            mkBtn ICON.newText Card_header_btn_addTxt "+文本" "t"
             // Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
             //       InnerHtml <| ICON.newText
             //       ] []
@@ -250,8 +254,10 @@ module Card =
           Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
                 // Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin  ] []
                 // Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.powerOff ] []
+              mkBtn ICON.fareWell Card_header_btn_goHome "回家" "t"
               mkBtn ICON.pin Card_header_btn_pin "" "t"
-              mkBtn ICON.powerOff Card_header_btn_close "不显示卡片" "t"
+              mkBtn ICON.powerOff Card_header_btn_close "关闭" "t"
+              
           ]
         ]
         Div [Id Card_body] [
@@ -295,19 +301,33 @@ module Card =
           pin = float state.pinState.getNumber
           position = p.toTuple
           size = r.toTuple
-          url = state.url
+          birthUrl = state.birthUrl
+          homeUrl = state.homeUrl
           webScrollTo = state.webScrollTo.toTuple
           show=state.show
         }
       console.log save
-      DataStorage.set save.Id save
+      DataStorage.set save.Id (AllowStoreType.Card save)
       ()
   and  Op_View (env:Core) =
     member val env = env
-    member this.init =
+    member this.getView (name:CssClass) =
+      if this.env.view.hashmap.Keys.Contains name.S then
+        Some this.env.view.hashmap[name.S]
+      else
+        console.log $"{name} 不存在"
+        None 
+      
+    member this.init = //综合load 和init 的共同情况
       let carrier = this.env.view.element.Value
-      let body = this.env.view.hashmap[Card_body.S].element.Value
       let state = this.env.state
+      let body = this.env.view.hashmap[Card_body.S].element.Value
+      let gohome = this.getView(Card_header_btn_goHome).Value.element.Value
+      let cardBody = this.env.view.hashmap[Card_body.S]
+      if this.env.state.homeUrl = window.location.href then  Op_element.displayNone gohome |> ignore
+      else
+        gohome.onclick <-fun e-> 
+          ()
       pointF.setElementPosition carrier state.position
       console.log state.size 
       size2d.setElementStyleSize body state.size 
@@ -371,13 +391,15 @@ module Card =
         tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.appendToListUnique this.env.state.url Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl window.location.href Id'
+        ()
       |AmongScreen ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "钉在屏幕"
         pointF.setElementPosition carrier p
         this.env.env.RemoveFromTransTab Id'
-        DataStorage.appendToListUnique this.env.state.url Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl window.location.href Id'
+        ()
       |TransTab ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "随行模式"
@@ -623,8 +645,7 @@ module Card =
     let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
     let addTxt = core.view.hashmap[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
-    
-    let cardBody = core.view.hashmap[Card_body.S]
+
     let self = core.view.element.Value
     self.onclick <- fun e->
       core.env.state.setFocus self
@@ -648,11 +669,8 @@ module Card =
       console.log "close triggered"
       core.env.RemoveFromTransTab core.Id
       core.state.show<-false
-      
       core.op_state.save
       core.env.removeMember core|>ignore
-      env.root.removeChild core.view.element.Value |>ignore
-      
       core.event.Close.Trigger()
       
     move.onmousedown<- fun e->

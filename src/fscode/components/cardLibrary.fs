@@ -143,11 +143,11 @@ module CardLib =
         let text,img = 
           match card.fields.Length with
           |0->
-            card.url,""
+            card.homeUrl,""
           |_->
             let result:Save.CardField option=
               card.fields|>Array.filter (fun e-> e.contentKind=0)|>Array.toList|>List.tryHead
-            let text = result|>Option.map (fun e-> e.content) |> Option.defaultValue card.url
+            let text = result|>Option.map (fun e-> e.content) |> Option.defaultValue card.homeUrl
             let imgResult:Save.CardField option =
               card.fields|>Array.filter (fun e-> e.contentKind=1)|>Array.toList|>List.tryHead
             let img = result|>Option.map (fun e-> e.content) |> Option.defaultValue ""

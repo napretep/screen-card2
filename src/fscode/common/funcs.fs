@@ -215,9 +215,7 @@ type Rect with
         size2d.setElementStyleSize e rect.Size
     static member zero = Rect.fromPoint_Size pointF.zero size2d.zero
     
-let displayNone (e:HTMLElement) = e.style.display <-"none"
-    
-let displayNonNone (e:HTMLElement)= e.style.display <-""
+
 
 
 type Op_element =
@@ -233,7 +231,12 @@ type Op_element =
     static member delFixed (E:HTMLElement) =
         E.style.position <- ""
         E
-    
+    static member displayNone  (E:HTMLElement) = 
+        E.style.display <-"none"
+        E
+    static member displayNonNone (e:HTMLElement)=
+        e.style.display <-""
+        e
     static member switchClass  (E:HTMLElement) add remove =
         E.classList.remove remove
         E.classList.add add

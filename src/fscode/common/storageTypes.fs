@@ -9,6 +9,9 @@ open Fable.Core.JS
 open Fable.Core.JsInterop
 open Browser.Dom
 
+
+
+
 type  [<StringEnum>] StorageName=
   |TransTab
   |CardLib
@@ -57,7 +60,8 @@ module Save=
   
   type Card={
     mutable Id:string
-    mutable url:string
+    mutable homeUrl:string
+    mutable birthUrl:string
     mutable webScrollTo:float*float
     mutable majorKind:SaveKind
     mutable createTime:float //时间戳
@@ -110,45 +114,76 @@ module Save=
         accompanyCards=[||]
         jumpByFieldId=None
       }
-
+[<RequireQualifiedAccess>]
+type  AllowStoreType=
+  |String' of string
+  |Array' of Array
+  |Number of float
+  |Bool of bool
+  |NoneAble of option<obj>
+  |Card of Save.Card
+  
 ///除了read是必须用promise 其他的不用
 type DataStorage =
     static member getString (keys:SaveKind array)=
       keys |> Seq.map (fun key -> key.S )|>Seq.toArray |> ResizeArray<string>
+    static member read(key: string array) =
+          chromeStorage.local.get(ResizeArray key)
+    static member set (key:string) (value:AllowStoreType) =
+      console.log value
+      match value with
+      |AllowStoreType.Array' value' -> chromeStorage.local.set(kv key value')    
+      |AllowStoreType.String' value' -> chromeStorage.local.set(kv key value')    
+      |AllowStoreType.Bool value' -> chromeStorage.local.set(kv key value')    
+      |AllowStoreType.Number value' -> chromeStorage.local.set(kv key value')    
+      |AllowStoreType.Card value' -> chromeStorage.local.set(kv key (value':>obj))    
+      |AllowStoreType.NoneAble value' -> chromeStorage.local.set(kv key (
+        match value' with
+        |Some v -> v
+        |None -> undefined
+        ))    
+      ()
     static member appendToListUnique (key:string) (value:obj)=
       chromeStorage.local.get(ResizeArray[key]).``then``(
         fun data->
-            let result = 
+            let result =
+              console.log data
               let newdata = data.[key]
                           |>Option.map (fun (d)->
                               d:?>obj array |> Seq.toList
                             )
                           |>Option.defaultValue [] 
+              console.log "A"
               if newdata|>List.contains value |> not then
                 value::newdata
               else
                 newdata
-            DataStorage.set key (result|>Seq.toArray)
-        )|>ignore
+            DataStorage.set key (AllowStoreType.Array' (result|>Seq.toArray))
+        ) 
 
     //read 是异步的  
-    static member read(key: string array) =
-          chromeStorage.local.get(ResizeArray key)
+    
+    
+    //读取DB中的list, 并去掉指定的元素
     static member removeFromList (key:string) (value:string) =
       
       DataStorage.read([|key|]).``then``(
         fun maybeData ->
           let data =
             match maybeData[key] with
-            |Some d-> d:?> string list
-            |_ -> []
-          let newData = if data |>List.contains value then data else  value::data
-          DataStorage.set key newData
-      )|>ignore
-      ()
+            |Some d-> d:?> string array
+            |_ -> [||]
+          
+          let newData = (data |>Seq.filter (fun e-> e=value)|>Seq.toArray ) 
+          DataStorage.set key (AllowStoreType.Array' newData)
+      )
+      
+    static member moveFromAToBList (A:string) (B:string) (value:string) =
+      (DataStorage.removeFromList A value ).``then``(fun e->DataStorage.appendToListUnique B value)
+        
+      
+       
     static member readAll = chromeStorage.local.get()
-    static member set (key:string) (value:obj) =
-      chromeStorage.local.set(kv key value)
 
     static member del (key:string) =
       chromeStorage.local.remove (U2.Case1 key)

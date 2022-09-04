@@ -361,6 +361,7 @@ padding:4px;
     justify-content:center;
     width:{btnSize}px;
     height:{btnSize}px;
+    margin-left:1px;
 }}
 
 .{Common_btn}:hover{{

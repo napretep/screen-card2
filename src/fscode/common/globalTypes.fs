@@ -121,16 +121,18 @@ with
     this.hashMap.Remove core.Id
   member this.saveTransTab =
     let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
-    DataStorage.set (TransTab.S) transTab |>ignore
+    DataStorage.set (TransTab.S) (AllowStoreType.Array' transTab) |>ignore
     ()
+  
   member this.AppendToTransTab (card_id:string)=
     let transTab  = this.state.cardNeedDisplay.transTab
     if transTab|>List.contains card_id |> not then
       this.state.cardNeedDisplay.transTab<-card_id::transTab
-    
     this.saveTransTab
   member this.RemoveFromTransTab (card_id:string)=
     let transTab  = this.state.cardNeedDisplay.transTab
     this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>card_id)
     
     this.saveTransTab
+  
+  

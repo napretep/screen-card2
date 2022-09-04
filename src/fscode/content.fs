@@ -208,7 +208,7 @@ CapFrameCancelBtn.onclick <- fun e-> closeCapFrame()
 let CapFrameAcceptBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_ok}":?>HTMLElement
 CapFrameAcceptBtn.onclick <- fun e->
   globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
-  displayNone globalCore.state.FrameDiv
+  Op_element.displayNone globalCore.state.FrameDiv
   JS.setTimeout (fun ()->
      chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
      ()
@@ -391,7 +391,7 @@ chromeRuntime.onMessage.addListener (
       
       let frame =globalCore.state.FrameDiv
       frame.remove()
-      displayNonNone frame
+      Op_element.displayNonNone frame
       let el = build (Img [ ] [ ])
       let img = el.element.Value:?>HTMLImageElement
       // window.setTimeout()
@@ -415,7 +415,7 @@ chromeRuntime.onMessage.addListener (
       ()        
     | ScreenCapNo ->
       window.confirm "截屏失败, 请点击插件的图标来激活截屏权限, 然后再试一次"
-      displayNonNone (globalCore.state.FrameDiv)
+      Op_element.displayNonNone (globalCore.state.FrameDiv)
       ()
     | ShowContent -> msg.content |> Pip.log
     | UserActivatedThisPage ->
