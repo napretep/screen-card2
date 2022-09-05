@@ -11,7 +11,9 @@ open app.common.obj.Geometry
 open app.common.styleSheet
 open app.common.storageTypes
 
-type ICore (view,Id) =
+type ICore (view,Id,type') =
+  member val type':SaveKind=type' with get,set
+  
   member val view:Brick=view with get,set
   member val Id:string=Id with get,set
 
@@ -38,7 +40,7 @@ type GlobalState = {
   mutable FrameDiv :HTMLElement
   mutable ScreenCapDataUrl:string
   mutable CurrentFocusElement:HTMLElement option
-  mutable cardNeedDisplay:Save.CardNeedDisplay
+  // mutable cardNeedDisplay:Save.CardNeedDisplay
 }
 with
   static member init =
@@ -72,7 +74,7 @@ with
       ScreenCapDataUrl = ""
       FrameRect = Rect.zero
       CurrentFocusElement = None
-      cardNeedDisplay = Save.CardNeedDisplay.init
+      // cardNeedDisplay = Save.CardNeedDisplay.init
     }
   member this.setFocus (e:HTMLElement) =
     this.CurrentFocusElement |> Option.iter (fun e-> e.classList.remove Common_zindexFocus.S)
@@ -89,6 +91,7 @@ type GlobalEvent={
   screenCapOk:Event<unit> // card id * dataurl 不传播数据, 数据通过globalstate传播
   openCardFromDB:Event<string> // string 为card id
   deleteCardInDB:Event<string>
+  updateCards:Event<string>
 }
 with
   static member init =
@@ -101,6 +104,7 @@ with
       screenCapOk=Event<_>()
       openCardFromDB=Event<string>() // string 为card id
       deleteCardInDB=Event<string>()
+      updateCards=Event<string>()
     }
 
 
@@ -115,24 +119,25 @@ with
   member inline this.addMember (core:ICore) =
     this.root.appendChild core.view.element.Value |>ignore
     this.hashMap <- this.hashMap.Add (core.Id,core)
-    DataStorage.appendToListUnique CardLib.S core.Id
   member inline this.removeMember (core:ICore) =
-    this.root.removeChild core.view.element.Value |>ignore
-    this.hashMap.Remove core.Id
-  member this.saveTransTab =
-    let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
-    DataStorage.set (TransTab.S) (AllowStoreType.Array' transTab) |>ignore
-    ()
-  
-  member this.AppendToTransTab (card_id:string)=
-    let transTab  = this.state.cardNeedDisplay.transTab
-    if transTab|>List.contains card_id |> not then
-      this.state.cardNeedDisplay.transTab<-card_id::transTab
-    this.saveTransTab
-  member this.RemoveFromTransTab (card_id:string)=
-    let transTab  = this.state.cardNeedDisplay.transTab
-    this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>card_id)
+    console.debug (core.Id+" removed")
+    core.view.element.Value.remove() 
+    this.hashMap <- this.hashMap.Remove core.Id
     
-    this.saveTransTab
+  // member this.saveTransTab =
+  //   let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
+  //   DataStorage.set (TravelCards.S) (AllowStoreType.Array' transTab) |>ignore
+  //   ()
+  //
+  // member this.AppendToTransTab (card_id:string)=
+  //   let transTab  = this.state.cardNeedDisplay.transTab
+  //   if transTab|>List.contains card_id |> not then
+  //     this.state.cardNeedDisplay.transTab<-card_id::transTab
+  //   this.saveTransTab
+  // member this.RemoveFromTransTab (card_id:string)=
+  //   let transTab  = this.state.cardNeedDisplay.transTab
+  //   this.state.cardNeedDisplay.transTab<-transTab|>List.filter(fun e->e<>card_id)
+    
+    // this.saveTransTab
   
   

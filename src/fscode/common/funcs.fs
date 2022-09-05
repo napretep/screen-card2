@@ -83,6 +83,28 @@ type ChromeMsg =
             |Some Id-> (Id,msg) ||> ChromeMsg.UntilTargetTabCompleteThenSend 
             |_ -> info |> ChromeMsg.UntilCurrentTabExistThenSend  
         |_ -> info |> chromeRuntime.sendMessage |> ignore
+    static member BroadcastTab (msg:RuntimeMsgHeader,?excludeCurrent:bool) =
+        chromeTabs.getCurrent().``then``(
+            fun curTab->
+                console.log curTab
+                if curTab.IsSome then
+                    chromeTabs.query(!!{|  |}).``then``(
+                        fun tabs->
+                            for i=0 to tabs.Count-1 do
+                            
+                                console.log tabs[i]
+                                if tabs[i].id<>curTab.Value.id then 
+                                 chromeTabs.sendMessage(tabs[i].id.Value,msg)
+                    )
+                else
+                    chromeTabs.query(!!{|  |}).``then``(
+                        fun tabs->
+                            for i=0 to tabs.Count-1 do
+                                 chromeTabs.sendMessage(tabs[i].id.Value,msg)
+                    )
+            )
+        
+        
     static member UntilCurrentTabExistThenSend (msg:RuntimeMsgHeader) =
         chromeTabs.query(!!{| active= true; currentWindow= true |}).``then``(
             fun tabArray->
@@ -240,3 +262,8 @@ type Op_element =
     static member switchClass  (E:HTMLElement) add remove =
         E.classList.remove remove
         E.classList.add add
+    static member removeChildSafely (E:HTMLElement) (kid:HTMLElement)=
+        if E.contains kid then
+            E.removeChild kid
+            ()
+           

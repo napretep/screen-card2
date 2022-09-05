@@ -27,7 +27,17 @@ type runtimeState = unit
 type storage = Dictionary<string,obj>
 type [<StringEnum>] RuntimeMsgActor = |Tab|Popup|Backend
 type [<StringEnum>] RuntimeMsgFormat = |Standard|Other
-type [<StringEnum>] RuntimeMsgPurpose = |ShowContent|UserActivatedThisPage|GetStorage|TabLoaded|Call|Other|ScreenCapRequest|ScreenCapOK|ScreenCapNo
+type [<StringEnum>] RuntimeMsgPurpose =
+    |ShowContent
+    |UserActivatedThisPage
+    |GetStorage
+    |TabLoaded
+    |Call
+    |Other
+    |ScreenCapRequest
+    |ScreenCapOK
+    |ScreenCapNo
+    |CardStateUpdate
 type RuntimeMsg = 
      { purpose:RuntimeMsgPurpose option
        callback :(obj->unit) option
@@ -45,7 +55,9 @@ type RuntimeMsgHeader =
         callback :(obj->unit) option
         receiver:RuntimeMsgActor
         content:obj
-        Id:float option}
+        Id:float option
+        UUID:string 
+        }
     static member Default ={
         format = Standard
         sender = Backend
@@ -55,6 +67,7 @@ type RuntimeMsgHeader =
         callback = None
         Id = None
         content = "hello world"
+        UUID=""
     }
     static member backendAsReceiver =RuntimeMsgHeader.Default
     static member popupAsReceiver ={RuntimeMsgHeader.Default with receiver=RuntimeMsgActor.Popup}
@@ -180,7 +193,9 @@ module Geometry =
             {
                 left = a.left+b.left
                 top = a.top+b.top
-            }    
+            }
+        static member (==) (a:pointF,b:pointF)=
+            a.left=b.left && b.top=a.top
     type size2d ={
         width:float
         height:float
@@ -195,6 +210,8 @@ module Geometry =
         static member fromTuple (t:float*float) =
             size2d.set (fst t) (snd t)
         member this.toTuple = (this.width,this.height)
+        static member (==) (a:size2d,b:size2d)=
+            a.width=b.width && b.height=a.height
         
     type Rect ={
         top:float

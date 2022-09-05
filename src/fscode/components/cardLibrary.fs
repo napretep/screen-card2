@@ -100,7 +100,7 @@ module CardLib =
     let show () =  view.element.Value
     
   type Core(env:GlobalCore,view:Brick,Id:string) as this=
-    inherit ICore(view,Id)
+    inherit ICore(view,Id,SaveKind.CardLib)
     member val env=env
     member val state = state with get,set
     member val event = Event.init with get,set
@@ -108,24 +108,12 @@ module CardLib =
   and Op_View (env:Core) =
     member val env=env
     member this.show =
-      let readCardIds(cids:string array)=
-        DataStorage.read(cids).``then``(
-        fun maybeData->
-          cids|>Array.map (fun cid->maybeData[cid])
-          |>Array.filter (fun objop->objop.IsSome)
-          |>Array.map(fun oo->
-            let card = oo.Value:?> Save.Card
-            card 
-            )
-          |>this.loadItem
-      )
-      DataStorage.read([|CardLib.S|]).``then``(
-        fun maybeData-> maybeData[CardLib.S]|>Option.iter (
-            fun realData ->
-              let card_ids= realData:?>string array
-              readCardIds(card_ids)|>ignore
-          )
-        )|>ignore
+      DataStorage.readCardLib
+        .``then``(fun(data)->
+          DataStorage.readCards(data).``then``(
+            fun data'->this.loadItem(data')
+      ))
+
       env.env.root.appendChild this.env.view.element.Value|>ignore
       this.env.state.IsShow<-true
     member this.hide =
@@ -136,7 +124,7 @@ module CardLib =
       let body = this.env.view.hashmap[CardLib_container.S].element.Value
       for i=0 to body.children.length-1 do
         body.children[0].remove()
-    member this.loadItem (items:Save.Card array) =
+    member this.loadItem (items:Save.Card seq) =
       let body = this.env.view.hashmap[CardLib_container.S].element.Value
   
       let iter(card:Save.Card)=
@@ -157,7 +145,6 @@ module CardLib =
         body.appendChild brick.element.Value|>ignore
         let del = brick.hashmap[CardField_btns_del.S].element.Value
         let get = brick.hashmap[CardField_btns_expand.S].element.Value
-        console.log("155行")
         del.onclick <- fun e->
           DataStorage.del(card.Id).``then``(fun e->
             brick.element.Value.remove()          
@@ -171,7 +158,7 @@ module CardLib =
               )
             ()
             )|>ignore
-      items|> Array.iter iter  
+      items|> Seq.iter iter  
       
   let Init (env:GlobalCore) (p:pointF) =
     let core = Core(

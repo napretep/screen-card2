@@ -29,7 +29,7 @@ let MsgReceivedCallback callback =
 let MsgToBackendHeader =
   { RuntimeMsgHeader.backendAsReceiver with sender = RuntimeMsgActor.Tab }
 
-
+let THISPAGE = newGuid() 
 
 let Host = document.createElement "div"
 Host.id <- "Screen.Card-wrapper"
@@ -138,11 +138,10 @@ module AssistDot =
     // e.style.transform<- $"translate({pos.left-mouse.left}px,{pos.top-mouse.top}px)"
   type EventHandler =
     static member WatchMouseMove (e:Event) =
-      console.log $"mouse move at {e}"
       let newE = e:?>MouseEvent
       update view.element.Value <| pointF.set newE.clientX newE.clientY
     static member WatchMouseUp (removeListener:unit->unit) (e:MouseEvent) =
-      console.log $"mouse up at {e}"
+      
       removeListener()
       
       
@@ -164,8 +163,11 @@ let globalCore ={
   state = GlobalState.init
 }
 
+globalCore.event.updateCards.Publish.Add(
+  fun e->
+    chromeRuntime.sendMessage {MsgToBackendHeader with purpose=CardStateUpdate;content=e;UUID=THISPAGE} |>ignore
+  )
 
-    
 globalCore.state.FrameDiv.onclick <- fun e->(
   globalCore.state.setFocus globalCore.state.FrameDiv
   ()
@@ -214,11 +216,6 @@ CapFrameAcceptBtn.onclick <- fun e->
      ()
    ) 20|>ignore
   ()
-globalCore.event.screenCapOk.Publish.Add(fun ()->
-  console.log "screenshot ok!" |>ignore
-  // closeCapFrame()
-  ()
-) 
 
 let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
   if globalCore.state.IsFrameDrawing && e.buttons=1 then
@@ -233,7 +230,6 @@ let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
                    height =if size.height>0 then size.height else  0
                    }
     size2d.setElementStyleSize el_self newSize
-    console.log (pointF.set e.clientX e.clientY)
   ()
   )
 
@@ -246,7 +242,6 @@ let mutable DrawingCapFrameOnMouseDown =Handler<MouseEvent> ( fun sender e ->
   pointF.setElementPosition frame (pointF.set e.clientX e.clientY)
   
   globalCore.event.mouseMoving.Publish.AddHandler DrawingCapFrameOnMouseMove
-  console.log "drawing begin"
   ()
   )
 let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
@@ -263,14 +258,11 @@ let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
     
     globalCore.event.mouseMoving.Publish.RemoveHandler DrawingCapFrameOnMouseMove
     globalCore.event.mouseDown.Publish.RemoveHandler DrawingCapFrameOnMouseDown
-    
-    console.log "drawing stop"
-  ()
+    ()
   )
 
 
 globalCore.event.screenCapBegin.Publish.Add (fun card_id->
-    console.log "ready for drawing"
     globalCore.state.ScreenCapCardId<- Some card_id
     let root = globalCore.root
     let kids = globalCore.root.children
@@ -297,7 +289,6 @@ baseElem.appendChild AssistDot.view.element.Value |> ignore
 
 let cardLib = CardLib.Init globalCore (pointF.set 200 200)
 AssistDot.Subscribe.OpenCardLib.Add (fun ()->
-  console.log "opencardlib"
   if cardLib.state.IsShow then
     cardLib.op_view.hide
   else
@@ -316,6 +307,7 @@ window.onmousemove <- fun e->
 
 window.onmouseup <- fun e->
   globalCore.event.mouseUp.Trigger(e)
+  DataStorage.readAll.``then``(fun e-> console.log(e))
   match AssistDot.state.MoveBegin with
   |true ->
     AssistDot.state.MoveBegin<-false 
@@ -324,63 +316,60 @@ window.onmouseup <- fun e->
 window.onmousedown <- fun e->
   globalCore.event.mouseDown.Trigger(e)
   ()
-let ReadDisplayCardFromDB() =
-  let allTranTabCard=
-        globalCore.hashMap.Keys|>Seq.filter(fun key->
-        let card = globalCore.hashMap[key]:?>Card.Core
-        card.state.pinState=PinState.TransTab
-        )|>Seq.toList
-      
+let updateCardsStateFromDB() =
   
-  //读取全部的 TransTab 并展示
-  let loadTransTab (data:obj option)=
-    data|>Option.iter(
-      fun aCard->
-        let card=aCard:?>Save.Card
-        if card.pin = 2 then Card.load globalCore card|>ignore 
+  let getCurrentCardInDB =
+    let currentCardsLi = globalCore.hashMap.Keys |>Seq.filter (fun key->
+        globalCore.hashMap[key].type'=SaveKind.Card
+        ) 
+    DataStorage.readCards(currentCardsLi|>Seq.toArray)
+  //1 更新随行卡片
+  let removeNoLongerTravelCards(travelCards:Save.Card seq)=
+    console.log ("travelCards at "+thisTime.toLocaleString())
+    console.log (travelCards|>Seq.toArray)
+    //去掉卡片
+    getCurrentCardInDB.``then``(
+      fun cards ->
+        cards|> Seq.map (
+          fun card->
+            if card.pin<>2 && (card.show=false || card.homeUrl <> window.location.href) then
+              (globalCore.hashMap[card.Id]:?>Card.Core).op_view.hide |> ignore
+            ()    
+          )|>Seq.toArray 
+      ).``then``(fun e->
+        console.log ("travelCards to load "+thisTime.toLocaleString())
+        console.log (travelCards|>Seq.toArray)
+        travelCards|>Seq.map (Card.load globalCore)|>Seq.toArray
       )
+    //更新卡片
     
-  let maybeLoadCards (card_ids:string array) (f:obj option->unit)=
-    DataStorage.read(card_ids).``then``(
-      fun maybeData->
-        // 过滤出没有随行的卡片删掉
-        allTranTabCard|>List.filter( 
-          fun old-> card_ids|>Array.contains old |> not)
-          |>List.map(fun i ->if globalCore.hashMap.Keys.Contains i then
-                              globalCore.removeMember  globalCore.hashMap[i]|>ignore 
-                   )|>ignore
-        // 应用自定义f
-        card_ids|>Array.map (fun card_id-> f(maybeData[card_id])
-          )
-      )
-    |>ignore
 
-  DataStorage.read([|TransTab.S|]).``then``
-    (fun maybeData->
-      maybeData[TransTab.S]|>Option.iter (
-        fun value->maybeLoadCards(value:?>string array) loadTransTab
-        )
-    )
-  |> ignore   
-  
-  
-  
-  //读取OnPageCard
-  let loadOnPageCard (data:obj option)=
-    data|>Option.iter(
-      fun aCard->
-        let card=aCard:?>Save.Card
-        if card.show then 
-          Card.load globalCore card|>ignore
+      
+  DataStorage.readTravelCards.``then``(
+    fun data ->DataStorage.readCards(data).``then``(
+        removeNoLongerTravelCards
       )
-  
-  DataStorage.read([|window.location.href|]).``then``
-    (fun maybeData->
-        maybeData[window.location.href]|>Option.iter (
-          fun card_ids ->maybeLoadCards (card_ids:?>string array) loadOnPageCard
-    )
   )
-  |>ignore
+  
+let updateSingleCard(card_id)=
+  DataStorage.readCards([|card_id|]).``then``(
+    fun cards->
+        cards|>
+        Seq.map (
+        fun (card:Save.Card)->
+          console.log card
+          match (card.pin, globalCore.hashMap.Keys |> Seq.contains card_id,card.show)   with
+          |2.0,_,true ->Card.load globalCore card 
+          |_,true,_->
+            if not card.show || card.homeUrl<>window.location.href then
+              globalCore.removeMember globalCore.hashMap[card.Id]
+              ()
+          |_,_,_ -> ()
+        )
+        |> Seq.toList
+        |> ignore
+    )
+  
   
   
 let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMsgActor.Tab}
@@ -419,8 +408,20 @@ chromeRuntime.onMessage.addListener (
       ()
     | ShowContent -> msg.content |> Pip.log
     | UserActivatedThisPage ->
-      ReadDisplayCardFromDB()
+      console.log "UserActivatedThisPage"
+      DataStorage.readAll.``then``(
+        fun data->
+          console.log ("UserActivatedThisPage"+ (thisTime.toLocaleString()))
+          console.log data
+          )
+       |>ignore 
+      updateCardsStateFromDB()
       |> ignore
+    | CardStateUpdate->
+      if msg.UUID <> THISPAGE then
+        console.log "CardStateUpdate"
+        let cardId =  msg.content:?>string
+        updateSingleCard(cardId)|> ignore
     | _ -> msg |> Pip.log)
 )
 
@@ -436,7 +437,7 @@ globalCore.event.screenCapOk.Publish.Add (fun ()->
   let cardCore = globalCore.hashMap[card_id]:?>Card.Core
   cardCore.op_field.addImgFields [dataurl] |> ignore
   cardCore.op_view.scrollToBottom
-  JS.setTimeout (fun ()->cardCore.op_state.save) 100
+  JS.setTimeout (fun ()->cardCore.op_state.saveAndRefresh|>ignore) 100
   ()
   )
 
@@ -444,4 +445,4 @@ console.log $" this is content.js from scapp2 version={thisTime.toLocaleString (
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")
 
 
-ReadDisplayCardFromDB()
+updateCardsStateFromDB()

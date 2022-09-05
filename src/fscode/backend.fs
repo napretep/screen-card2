@@ -51,6 +51,9 @@ chromeRuntime.onMessage.addListener (
             {header with sender=Backend;receiver=Tab;purpose=ShowContent} |> ChromeMsg.To
             ()
             )
+        |Tab,CardStateUpdate ->
+            ChromeMsg.BroadcastTab({ToTabHeader with purpose=CardStateUpdate;content=header.content;UUID=header.UUID},true)
+            ()
         |_ ->
             "receive Unknown msg"|> Pip.log
             header |> Pip.log

@@ -33,23 +33,23 @@ module Card =
   type [<StringEnum>] PinState =
     |PinToPage // 在页面上绝对定位
     |AmongScreen // 在屏幕上固定定位
-    |TransTab // 在tab之间固定定位.
+    |Travel // 在tab之间固定定位.
   with
     member this.Switch =
       match this with
       |PinToPage -> AmongScreen
-      |AmongScreen -> TransTab
-      |TransTab -> PinToPage
+      |AmongScreen -> Travel
+      |Travel -> PinToPage
     member this.getNumber =
       match this with 
       |PinToPage -> 0
       |AmongScreen -> 1
-      |TransTab -> 2
+      |Travel -> 2
     static member fromNumber (n:float)=
       match int n with
       |0 -> PinToPage
       |1 -> AmongScreen
-      |2 -> TransTab
+      |2 -> Travel
     member this.S=this.ToString()  
   end
   // type FieldState (Id)=
@@ -239,26 +239,14 @@ module Card =
       Div [ classes [Common_glass;];Id Card_self ] [
         Div [ classes [Common_glass];Id Card_header ] [
           Div [classes [Common_glass;Card_header_side_btn];Id Card_header_left_btn] [
-            // Span [classes [Common_glass;Common_btn];Id Card_header_btn_addImg
-            //       InnerHtml <| ICON.newClip []
-            //       ] [
-            //   if true then 
-            //     console.log"hello true tooltip"
-            //     Tooltip.el ["test";"l"]
-            // ]
+
             mkBtn ICON.newClip Card_header_btn_addImg "+图片" "t"
             mkBtn ICON.newText Card_header_btn_addTxt "+文本" "t"
-            // Span [classes [Common_glass;Common_btn];Id Card_header_btn_addTxt
-            //       InnerHtml <| ICON.newText
-            //       ] []
+
           ]
-//           Span [classes [Common_moveBar;Common_glass;Common_btn]
-//                 Id Card_header_btn_move ; InnerHtml <| ICON.HorizontalMoveBar ] []
           mkBtnMoveH Card_header_btn_move 
           Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
-                // Span [classes [Common_glass;Common_btn];Id Card_header_btn_pin ; InnerHtml <| ICON.pin  ] []
-                // Span [classes [Common_glass;Common_btn];Id Card_header_btn_close ; InnerHtml <| ICON.powerOff ] []
-              // mkBtn ICON.fareWell Card_header_btn_goHome "回家" "t"
+
               mkBtn ICON.pin Card_header_btn_pin "" "t"
               mkBtn ICON.powerOff Card_header_btn_close "关闭" "t"
               
@@ -275,7 +263,7 @@ module Card =
   
   
   type Core(env:GlobalCore,view:Brick,Id:string) as this=
-    inherit ICore(view,Id)
+    inherit ICore(view,Id,SaveKind.Card)
     member val event = Event'.init with get,set
     member val state = State.init with get,set
     member val fieldState:Map<string,FieldState> =Map<string,FieldState>[] with get,set
@@ -284,12 +272,22 @@ module Card =
     member val op_state  = Op_State(this)
     member val op_view:Op_View  = Op_View(this)
     member val op_field:Op_Field = Op_Field(this)
+    
+      
   and Op_State (env:Core)  =
     member val env = env
-    member this.save=
+    member this.saveAndRefresh =
+      setTimeout (fun e->
+          this.save.``then``( fun x-> this.refresh )
+          ()
+          ) 50
+    member this.refresh =
+      setTimeout (fun e->this.env.env.event.updateCards.Trigger(this.env.Id)) 200|>ignore
+      ()
+    member this.save: Promise<unit> =
       let fieldsState = this.env.view.hashmap[Card_body.S].children
                         |> List.map (fun (b:Brick)->this.env.fieldState[b.Id].Save)|>List.toArray
-      // console.log fieldsState
+
       let carrier = this.env.view.element.Value
       let body = this.env.view.hashmap[Card_body.S].element.Value
       let p = pointF.fromElementBounding carrier
@@ -310,11 +308,21 @@ module Card =
           webScrollTo = state.webScrollTo.toTuple
           show=state.show
         }
-      console.log save
-      DataStorage.set save.Id (AllowStoreType.Card save)
-      ()
+      console.log "save card"
+      console.log save 
+      (DataStorage.set save.Id (AllowStoreType.Card save))
   and  Op_View (env:Core) =
     member val env = env
+    member this.show =
+      this.env.env.addMember this.env
+      DataStorage.appendToListUnique CardLib.S this.env.Id
+    member this.hide =
+      this.env.op_state.save.``then``( fun e->
+        this.env.env.removeMember this.env
+      )
+      DataStorage.removeFromList window.location.href this.env.Id
+      DataStorage.removeFromList TravelCards.S this.env.Id
+      
     member this.getView (name:CssClass) =
       if this.env.view.hashmap.Keys |>Seq.contains name.S then
         Some this.env.view.hashmap[name.S]
@@ -328,15 +336,7 @@ module Card =
       let body = this.env.view.hashmap[Card_body.S].element.Value
       // let gohome = this.getView(Card_header_btn_goHome).Value.element.Value
       let cardBody = this.env.view.hashmap[Card_body.S]
-      // if this.env.state.homeUrl = window.location.href then
-      //   console.log "this.env.state.homeUrl = window.location.href"
-      //   Op_element.displayNone gohome |> ignore
-      // else
-      //   gohome.onclick <-fun e->
-      //     this.env.env.remo
-      //     ()
       pointF.setElementPosition carrier state.position
-      console.log state.size 
       size2d.setElementStyleSize body state.size 
       this.setPinColor
       this.AfterSetPinColor state.position
@@ -362,7 +362,7 @@ module Card =
         Pin.style.background<-"transparent"
       |AmongScreen ->
         Pin.style.background<-"yellow"
-      |TransTab ->
+      |Travel ->
         Pin.style.background<-"#7e7"
        
         ()
@@ -383,7 +383,7 @@ module Card =
         carrier.style.position <- "absolute"
       |AmongScreen->
         carrier.style.position <- "fixed"
-      |TransTab->
+      |Travel->
         carrier.style.position <- "fixed"
     member this.AfterSetPinColor (p:pointF)=
       let carrier = this.env.view.hashmap[Card_carrier.S].element.Value
@@ -398,26 +398,29 @@ module Card =
         carrier.style.position <- "absolute"
         tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
-        this.env.env.RemoveFromTransTab Id'
         DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
+        DataStorage.removeFromList TravelCards.S Id'
         this.env.state.homeUrl<-currentUrl
         ()
       |AmongScreen ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "钉在屏幕"
         pointF.setElementPosition carrier p
-        this.env.env.RemoveFromTransTab Id'
         DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
+        DataStorage.removeFromList TravelCards.S Id'
         this.env.state.homeUrl<-currentUrl
         ()
-      |TransTab ->
+      |Travel ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "随行模式"
         pointF.setElementPosition carrier p
-        
-        this.env.env.AppendToTransTab Id'
+        DataStorage.removeFromList currentUrl Id'
+        DataStorage.appendToListUnique TravelCards.S Id'
+        this.env.state.homeUrl<-""
         
         ()
+      
+      
       ()
     member this.setPinColor =
       let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
@@ -426,7 +429,7 @@ module Card =
         Pin.style.background<-"transparent"
       |AmongScreen ->
         Pin.style.background<-"yellow"
-      |TransTab ->
+      |Travel ->
         Pin.style.background<-"#7e7"
     // member this.checkPin =
       
@@ -597,7 +600,7 @@ module Card =
               movingEl.style.zIndex <- ""
               body.replaceChild(movingEl,div)|>ignore
               this.updateIndexOfBodyChildren
-          
+              this.env.op_state.saveAndRefresh|>ignore
           )
         field
     ) 
@@ -616,12 +619,11 @@ module Card =
             let rec watch() =
               if state.content <> content then
                     content<-state.content
-                    console.log content
-                    setTimeout (fun e->watch()) 1000
+                    setTimeout (fun e->watch()) 200
                     ()
               else
-                console.log "文本更新完成"
-                this.env.op_state.save
+                this.env.op_state.saveAndRefresh
+                ()  
               ()
                 
             let content_text = field.element.Value.querySelector($"#{CardField_content_text.S}"):?>HTMLTextAreaElement
@@ -630,6 +632,7 @@ module Card =
                 watch()
                 ()
             
+            ()
           |1.0 ->
             let contentImg = field.hashmap[CardField_content_img.S].element.Value
             contentImg.ondragstart<- fun e-> e.preventDefault()
@@ -663,40 +666,35 @@ module Card =
       Id = id
     )
     
-    console.log "hashmap"
-    // console.log core.view.hashmap.[Card_header_btn_close.S]
     let close =core.view.hashmap[Card_header_btn_close.S].element.Value
     let move = core.view.hashmap[Card_header_btn_move.S].element.Value
     let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
     let addTxt = core.view.hashmap[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
-
     let self = core.view.element.Value
     self.onclick <- fun e->
       core.env.state.setFocus self
+    // self.onmouseup <- fun e->
+    //   setTimeout (fun e->core.op_state.save.``then``(fun e->core.op_state.refresh) |> ignore) 20
     self.onmouseup <- fun e->
-      JS.setTimeout (fun e->core.op_state.save |> ignore) 100
-      
+      console.log e.target
+      core.op_state.saveAndRefresh
       ()
-    
-    
-    
     addTxt.onclick<- fun e->
-      
       core.op_field.addTextFields [thisTime.toLocaleString()+ "\n" ]
       core.op_view.scrollToBottom
-      core.op_state.save
-      
+      core.op_state.saveAndRefresh
       ()
+      
     addImg.onclick <- fun e-> env.event.screenCapBegin.Trigger(core.Id)
 
     close.onclick<- fun e->
-      console.log "close triggered"
-      core.env.RemoveFromTransTab core.Id
       core.state.show<-false
-      core.op_state.save
-      core.env.removeMember core|>ignore
+      core.op_view.hide.``then``(fun e->
+        core.op_state.saveAndRefresh
+        )
       core.event.Close.Trigger()
+      
       
     move.onmousedown<- fun e->
       let self = core.view.element.Value
@@ -717,6 +715,7 @@ module Card =
               IsMoving<-false
               core.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
               core.env.root|>Op_element.delMask|> ignore
+              core.op_state.saveAndRefresh
               ()
         )
       core.env.event.mouseMoving.Publish.AddHandler onMoveHandle
@@ -727,6 +726,7 @@ module Card =
       core.state.pinState <- core.state.pinState.Switch
       core.op_view.setPinColor
       core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
+      setTimeout (fun e->core.op_state.saveAndRefresh|>ignore) 200|>ignore
       
     // core.event.Close.Publish.Add <| fun e->
       
@@ -744,9 +744,12 @@ module Card =
     env.addMember core
     core.op_view.setPinColor
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
+    core.op_view.show
     core
   //从内存读取
   let load (env:GlobalCore) (card:Save.Card) =
+    console.log "load card :"
+    console.log card
     let p = pointF.fromTuple card.position
     let pin = PinState.fromNumber card.pin
     let core =
@@ -754,8 +757,11 @@ module Card =
       |Some iCore ->
         iCore:?>Core 
       |_->Init env p card.Id
+    console.log "load card:"
     console.log card
     core.state.clone card // 这个地方 很重要, 以后新增什么属性, 需要看看有没有成功克隆
     core.op_view.init
     core.op_field.clearFields
     core.op_field.loadFields card.fields
+    if core.state.pinState = PinState.Travel then
+      DataStorage.removeFromList window.location.href core.Id |>ignore

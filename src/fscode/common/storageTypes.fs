@@ -1,6 +1,7 @@
 ﻿module app.common.storageTypes
 open System
 open Chrome
+open Chrome.Chrome
 open app.common.funcs
 open app.common.obj
 
@@ -13,8 +14,8 @@ open Browser.Dom
 
 
 type  [<StringEnum>] StorageName=
-  |TransTab
-  |CardLib
+  |TravelCards
+  |CardLib //保存了全部的卡片信息, 从中删除就是全部删除
   with
     member this.S= this.ToString()
 
@@ -48,15 +49,15 @@ module Save=
   }
 
 
-  type CardNeedDisplay={
-    mutable transTab:string list
-    mutable relateTab:string list
-  }
-  with
-    static member init ={
-      transTab = []
-      relateTab = []
-    } 
+  // type CardNeedDisplay={
+  //   mutable transTab:string list
+  //   mutable relateTab:string list
+  // }
+  // with
+  //   static member init ={
+  //     transTab = []
+  //     relateTab = []
+  //   } 
   
   type Card={
     mutable Id:string
@@ -73,26 +74,7 @@ module Save=
     mutable show:bool//关闭后通常不会show
   }
   
-  // type CardLib = {
-  //   majorKind:SaveKind
-  //   Id:string
-  //   pin:PinKind
-  //   searchString:string
-  //   position:float*float //x,y
-  //   size:float*float
-  //   cards:Card array
-  // }
-  // with
-  //   static member init =
-  //     {
-  //         majorKind=SaveKind.CardLib
-  //         Id=SaveKind.CardLib.S
-  //         pin=Page
-  //         searchString=""
-  //         position=(200,200) //x,y
-  //         size=(600,400)
-  //         cards=[||]
-  //     }
+
   type CardLib ={
     card_ids:string array
   }
@@ -130,7 +112,7 @@ type DataStorage =
     static member read(key: string array) =
           chromeStorage.local.get(ResizeArray key)
     static member set (key:string) (value:AllowStoreType) =
-      console.log value
+      console.log value, thisTime.toLocaleString()
       match value with
       |AllowStoreType.Array' value' -> chromeStorage.local.set(kv key value')    
       |AllowStoreType.String' value' -> chromeStorage.local.set(kv key value')    
@@ -142,7 +124,7 @@ type DataStorage =
         |Some v -> v
         |None -> undefined
         ))    
-      ()
+      
     static member appendToListUnique (key:string) (value:obj)=
       chromeStorage.local.get(ResizeArray[key]).``then``(
         fun data->
@@ -153,7 +135,6 @@ type DataStorage =
                               d:?>obj array |> Seq.toList
                             )
                           |>Option.defaultValue [] 
-              console.log "A"
               if newdata|>List.contains value |> not then
                 value::newdata
               else
@@ -174,7 +155,9 @@ type DataStorage =
             |Some d-> d:?> string array
             |_ -> [||]
           
-          let newData = (data |>Seq.filter (fun e-> e=value)|>Seq.toArray ) 
+          let newData = (data |>Seq.filter (fun e-> e<>value)|>Seq.toArray )
+          console.log $"static member removeFromList {key}"
+          console.log newData
           DataStorage.set key (AllowStoreType.Array' newData)
       )
       
@@ -193,35 +176,31 @@ type DataStorage =
     static member readCardLib =
       DataStorage.read([|CardLib.S|]).``then``(
         fun maybeData->
-          maybeData[CardLib.S]|> Option.map (fun e->
-            let data = (e):?>(Save.CardLib)
-            data  
-            )
+          maybeData[CardLib.S]|>Option.map (fun data'->
+            let data = data':?>string array
+            data
+            )|>Option.defaultValue [||]
       )
+    static member readTravelCards =
+      DataStorage.read([|TravelCards.S|]).``then``(
+        fun maybeData->
+          console.log ("static member readTravelCards")
+          console.log maybeData
+          maybeData[TravelCards.S]|>Option.map (fun data'->
+            let data = data':?>string array
+            data
+            )|>Option.defaultValue [||]
+        )
     static member readCards (card_ids:string array)=
       DataStorage.read(card_ids).``then``(
         fun maybeData ->
-          card_ids|>Seq.map(fun card_id ->
-              maybeData[card_id]|>Option.map (fun e->
-                let card = e:?> Save.Card
-                card
-            ) 
-        )
+        card_ids|>Seq.filter(fun card_id-> maybeData[card_id].IsSome)
+                |>Seq.map (fun card_id->maybeData[card_id].Value:?>Save.Card) 
       )
+    static member readCardsFromUrl (url:string)=
+      DataStorage.read([|url|]).``then``(
+          fun maybe'->
+            let data =( maybe'[url]|>Option.defaultValue [||]  ):?>string array
+            data
+        )
     static member clear = chromeStorage.local.clear ()
-
-// type Continuation =
-    
-    // static member test (?key, ?callback)=
-    //     let callback = defaultArg callback (fun e->window.alert e)
-    //     let key = defaultArg key MajorKind.Count 
-    //     let realkey = match key with
-    //     |MajorKind.Id s ->s
-    //     |_ -> key.ToString()
-    //     DataStorage.read([|key|]).``then``(fun e->
-    //     let mutable value =0
-    //     if e.[key].IsSome then
-    //         value <- unbox int e.[realkey].Value + 1
-    //     callback value
-    //     DataStorage.set key value
-    // ) 
