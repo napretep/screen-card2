@@ -163,6 +163,15 @@ let globalCore ={
   state = GlobalState.init
 }
 
+//ALL_EVENT here
+globalCore.event.updateCardLib.Publish.Add(fun e->
+    globalCore.getCardLibIfShow
+    |> Seq.iter (fun e->
+      let cardlib = e:?> CardLib.Core
+      cardlib.op_view.reload
+      ()
+      )
+  )
 globalCore.event.updateCards.Publish.Add(
   fun e->
     chromeRuntime.sendMessage {MsgToBackendHeader with purpose=CardStateUpdate;content=e;UUID=THISPAGE} |>ignore

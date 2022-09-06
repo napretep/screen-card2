@@ -13,6 +13,7 @@ open app.common.styleSheet
 open app.common.DSL
 open Browser.Types
 open Browser
+open Fetch
 open Fable.Core
 open FSharp.Control
 open app.components.tooltip
@@ -286,11 +287,17 @@ module Card =
       this.env.state.size <-size2d.fromElementBounding (this.env.view.hashmap[Card_body.S].element.Value)
       console.log "save rect"
       console.log env.state.size
+
     member this.saveAndRefresh =
-      setTimeout (fun e->
+      let job = async {
+          do! Async.Sleep 50
           this.save.``then``( fun x-> this.refresh )
-          ()
-          ) 50
+      }
+      Async.RunSynchronously job
+      // setTimeout (fun e->
+      //     this.save.``then``( fun x-> this.refresh )
+      //     ()
+      //     ) 50
     member this.refresh =
       setTimeout (fun e->this.env.env.event.updateCards.Trigger(this.env.Id)) 200|>ignore
       ()
@@ -322,6 +329,11 @@ module Card =
       console.log "save card"
       console.log save 
       (DataStorage.set save.Id (AllowStoreType.Card save))
+    member this.newSave_Refresh =
+        promise {
+          let! r1 = this.save
+          this.refresh
+        } 
   and  Op_View (env:Core) =
     member val env = env
     member this.show =
@@ -758,7 +770,12 @@ module Card =
       core.state.IsMoving <-false
     env.addMember core
     core.op_view.setPinColor
-    core.op_state.saveAndRefresh
+    promise{
+      let! r1=core.op_state.newSave_Refresh
+      core.env.event.updateCardLib.Trigger()
+      return r1
+    }
+    
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core.op_view.show
     core

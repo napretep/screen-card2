@@ -92,6 +92,7 @@ type GlobalEvent={
   openCardFromDB:Event<string> // string 为card id
   deleteCardInDB:Event<string>
   updateCards:Event<string>
+  updateCardLib:Event<unit>
 }
 with
   static member init =
@@ -105,6 +106,7 @@ with
       openCardFromDB=Event<string>() // string 为card id
       deleteCardInDB=Event<string>()
       updateCards=Event<string>()
+      updateCardLib=Event<_>()
     }
 
 
@@ -129,7 +131,8 @@ with
     ()
   member this.getCardLibIfShow =
     this.hashMap.Values|>Seq.filter (fun e->e.type'=SaveKind.CardLib)
-
+  
+  
   // member this.saveTransTab =
   //   let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
   //   DataStorage.set (TravelCards.S) (AllowStoreType.Array' transTab) |>ignore
