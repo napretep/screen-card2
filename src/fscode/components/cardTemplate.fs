@@ -1,4 +1,5 @@
 ﻿module app.components.cardTemplate
+open System.Drawing
 open System.Text.RegularExpressions
 open Fable.Core.JS
 open Microsoft.FSharp.Collections
@@ -141,6 +142,7 @@ module Card =
     mutable size:size2d
     mutable show:bool
     mutable birthUrl:string
+    mutable mini:bool
   }
   with
     static member init =
@@ -166,6 +168,7 @@ module Card =
       position = pointF.zero
       show=true
       birthUrl=window.location.href
+      mini=false
     }
     member this.clone (card:Save.Card) =
       this.homeUrl<-card.homeUrl
@@ -177,6 +180,7 @@ module Card =
       this.position <- pointF.fromTuple card.position
       this.show<- card.show
       this.birthUrl <- card.birthUrl
+      this.mini<-card.mini
       ()
 
   type Event' = {
@@ -220,14 +224,14 @@ module Card =
         //      InnerHtml <| ICON.del 
         //      ] []
         
-        mkBtn ICON.backlink CardField_btns_link  "返回摘录页面" "l"
+        mkBtn ICON.backlink CardField_btns_link  "笔记溯源" "l"
         mkBtn ICON.expand CardField_btns_expand  "收起/展开" "l"
-        mkBtn ICON.del CardField_btns_del  "删除记录" "l"
+        mkBtn ICON.del CardField_btns_del  "删除笔记" "l"
 
       ]
     
   ]
-
+  
   let testField() = cardField <| Text "123"
   let testField2() = cardField <| Image URL.logo
   let atom (point:pointF) =
@@ -276,6 +280,12 @@ module Card =
       
   and Op_State (env:Core)  =
     member val env = env
+    member this.saveRect=
+      let r = Rect.fromElement this.env.view.element.Value
+      this.env.state.position<- r.Point
+      this.env.state.size <-size2d.fromElementBounding (this.env.view.hashmap[Card_body.S].element.Value)
+      console.log "save rect"
+      console.log env.state.size
     member this.saveAndRefresh =
       setTimeout (fun e->
           this.save.``then``( fun x-> this.refresh )
@@ -301,12 +311,13 @@ module Card =
           editTime = state.editTime
           fields = fieldsState
           pin = float state.pinState.getNumber
-          position = p.toTuple
-          size = r.toTuple
+          position = if p.toTuple = pointF.zero.toTuple then state.position.toTuple else p.toTuple 
+          size = if r.toTuple = size2d.zero.toTuple then state.size.toTuple else r.toTuple
           birthUrl = state.birthUrl
           homeUrl = state.homeUrl
           webScrollTo = state.webScrollTo.toTuple
           show=state.show
+          mini=state.mini
         }
       console.log "save card"
       console.log save 
@@ -315,13 +326,13 @@ module Card =
     member val env = env
     member this.show =
       this.env.env.addMember this.env
-      DataStorage.appendToListUnique CardLib.S this.env.Id
+      DataStorage.appendToListUnique CardLib.S [|this.env.Id|]
     member this.hide =
       this.env.op_state.save.``then``( fun e->
         this.env.env.removeMember this.env
       )
-      DataStorage.removeFromList window.location.href this.env.Id
-      DataStorage.removeFromList TravelCards.S this.env.Id
+      DataStorage.removeFromList window.location.href [|this.env.Id|]
+      DataStorage.removeFromList TravelCards.S [|this.env.Id|]
       
     member this.getView (name:CssClass) =
       if this.env.view.hashmap.Keys |>Seq.contains name.S then
@@ -398,24 +409,24 @@ module Card =
         carrier.style.position <- "absolute"
         tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
-        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
-        DataStorage.removeFromList TravelCards.S Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl [|Id'|]
+        DataStorage.removeFromList TravelCards.S [|Id'|]
         this.env.state.homeUrl<-currentUrl
         ()
       |AmongScreen ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "钉在屏幕"
         pointF.setElementPosition carrier p
-        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl Id'
-        DataStorage.removeFromList TravelCards.S Id'
+        DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl [|Id'|]
+        DataStorage.removeFromList TravelCards.S [|Id'|]
         this.env.state.homeUrl<-currentUrl
         ()
       |Travel ->
         carrier.style.position <- "fixed"
         tooltip.innerText<- "随行模式"
         pointF.setElementPosition carrier p
-        DataStorage.removeFromList currentUrl Id'
-        DataStorage.appendToListUnique TravelCards.S Id'
+        DataStorage.removeFromList currentUrl [|Id'|]
+        DataStorage.appendToListUnique TravelCards.S [|Id'|]
         this.env.state.homeUrl<-""
         
         ()
@@ -690,11 +701,15 @@ module Card =
 
     close.onclick<- fun e->
       core.state.show<-false
-      core.op_view.hide.``then``(fun e->
-        core.op_state.saveAndRefresh
+      core.op_state.saveRect
+      core.op_state.save.``then``(
+        fun e->
+          core.op_view.hide
+          core.op_state.refresh
         )
       core.event.Close.Trigger()
-      
+    
+    
       
     move.onmousedown<- fun e->
       let self = core.view.element.Value
@@ -743,6 +758,7 @@ module Card =
       core.state.IsMoving <-false
     env.addMember core
     core.op_view.setPinColor
+    core.op_state.saveAndRefresh
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core.op_view.show
     core
@@ -764,4 +780,4 @@ module Card =
     core.op_field.clearFields
     core.op_field.loadFields card.fields
     if core.state.pinState = PinState.Travel then
-      DataStorage.removeFromList window.location.href core.Id |>ignore
+      DataStorage.removeFromList window.location.href [|core.Id|] |>ignore

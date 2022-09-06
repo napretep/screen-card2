@@ -14,7 +14,9 @@ let MsgReceivedCallback callback =
 
 
 
-
+//
+// let (:=) <'T,'F>(a:seq<'T>) = a|>Seq.map (fun e->e:>'F)
+   
     
 
 console.log $"time= {thisTime.toLocaleString ()}"
@@ -22,3 +24,6 @@ console.log $"time= {thisTime.toLocaleString ()}"
 // let root = document.createElement "div"
 // root.id <-"root"
 // document.body.appendChild root
+//
+// let a:string list = []
+// let b = unbox<obj list> a

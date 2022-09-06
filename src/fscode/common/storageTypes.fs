@@ -72,6 +72,7 @@ module Save=
     mutable position:float*float //x,y 是client bounding rect 的位置
     mutable size:float*float
     mutable show:bool//关闭后通常不会show
+    mutable mini:bool//缩小在最右侧
   }
   
 
@@ -125,28 +126,29 @@ type DataStorage =
         |None -> undefined
         ))    
       
-    static member appendToListUnique (key:string) (value:obj)=
+    static member appendToListUnique (key:string) (values:obj array)=
       chromeStorage.local.get(ResizeArray[key]).``then``(
         fun data->
             let result =
               console.log data
-              let newdata = data.[key]
+              let newData = data.[key]
                           |>Option.map (fun (d)->
                               d:?>obj array |> Seq.toList
                             )
                           |>Option.defaultValue [] 
-              if newdata|>List.contains value |> not then
-                value::newdata
-              else
-                newdata
+              values|>Seq.fold (fun (sum:obj list) value ->
+                                  if newData|>List.contains value|> not then
+                                    value::sum
+                                  else
+                                    sum
+                                  ) [] 
+                                
             DataStorage.set key (AllowStoreType.Array' (result|>Seq.toArray))
         ) 
 
-    //read 是异步的  
-    
     
     //读取DB中的list, 并去掉指定的元素
-    static member removeFromList (key:string) (value:string) =
+    static member removeFromList (key:string) (values:obj array ) =
       
       DataStorage.read([|key|]).``then``(
         fun maybeData ->
@@ -155,14 +157,15 @@ type DataStorage =
             |Some d-> d:?> string array
             |_ -> [||]
           
-          let newData = (data |>Seq.filter (fun e-> e<>value)|>Seq.toArray )
+          let newData = data |>Seq.filter (fun e-> values|>Seq.contains e |> not )|>Seq.toArray 
           console.log $"static member removeFromList {key}"
           console.log newData
           DataStorage.set key (AllowStoreType.Array' newData)
       )
       
-    static member moveFromAToBList (A:string) (B:string) (value:string) =
-      (DataStorage.removeFromList A value ).``then``(fun e->DataStorage.appendToListUnique B value)
+    static member moveFromAToBList (A:string) (B:string) (value':string array) =
+      let value = value'|>Seq.map (fun v->v:>obj) |>Seq.toArray
+      (DataStorage.removeFromList A value ).``then``(fun e->DataStorage.appendToListUnique B (value))
         
       
        
@@ -173,7 +176,7 @@ type DataStorage =
       
     static member delMany (key: string array) =
       chromeStorage.local.remove (U2.Case2 (ResizeArray key))
-    static member readCardLib =
+    static member readCardLibReturnId =
       DataStorage.read([|CardLib.S|]).``then``(
         fun maybeData->
           maybeData[CardLib.S]|>Option.map (fun data'->
@@ -181,6 +184,8 @@ type DataStorage =
             data
             )|>Option.defaultValue [||]
       )
+    static member readCardLibReturnCard=
+      DataStorage.readCardLibReturnId.``then``( DataStorage.readCards )
     static member readTravelCards =
       DataStorage.read([|TravelCards.S|]).``then``(
         fun maybeData->
@@ -204,3 +209,7 @@ type DataStorage =
             data
         )
     static member clear = chromeStorage.local.clear ()
+    static member removeCardsFromCardLib (card_ids:string array)=
+      DataStorage.delMany(card_ids).``then``(
+        fun e->  DataStorage.removeFromList CardLib.S (card_ids|>Seq.map(fun e->e:>obj)|>Seq.toArray)
+        )

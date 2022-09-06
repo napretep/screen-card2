@@ -292,7 +292,7 @@ AssistDot.Subscribe.OpenCardLib.Add (fun ()->
   if cardLib.state.IsShow then
     cardLib.op_view.hide
   else
-    cardLib.op_view.show
+    cardLib.op_view.show|>ignore
 )
 AssistDot.Subscribe.CreateCard.Add(fun ()->
   let newCard = Card.Init globalCore (pointF.set 200 200) (newGuid())
@@ -422,6 +422,7 @@ chromeRuntime.onMessage.addListener (
         console.log "CardStateUpdate"
         let cardId =  msg.content:?>string
         updateSingleCard(cardId)|> ignore
+        
     | _ -> msg |> Pip.log)
 )
 

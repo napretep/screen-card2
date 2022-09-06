@@ -265,5 +265,4 @@ type Op_element =
     static member removeChildSafely (E:HTMLElement) (kid:HTMLElement)=
         if E.contains kid then
             E.removeChild kid
-            ()
-           
+            () 

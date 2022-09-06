@@ -121,9 +121,15 @@ with
     this.hashMap <- this.hashMap.Add (core.Id,core)
   member inline this.removeMember (core:ICore) =
     console.debug (core.Id+" removed")
-    core.view.element.Value.remove() 
-    this.hashMap <- this.hashMap.Remove core.Id
-    
+    core.view.element.Value.remove()
+    this.safeRemoveMember core
+  member this.safeRemoveMember (core:ICore) =
+    if this.hashMap.Keys |> Seq.contains core.Id then
+      this.hashMap <- this.hashMap.Remove core.Id
+    ()
+  member this.getCardLibIfShow =
+    this.hashMap.Values|>Seq.filter (fun e->e.type'=SaveKind.CardLib)
+
   // member this.saveTransTab =
   //   let transTab = this.state.cardNeedDisplay.transTab|>List.toArray
   //   DataStorage.set (TravelCards.S) (AllowStoreType.Array' transTab) |>ignore

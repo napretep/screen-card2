@@ -15,7 +15,7 @@
             "src/jscode/content.js"
         ],
         "matches": [
-            "http://*/*", "https://*/*"
+            "http://*/*", "https://*/*","file://*/*"
         ]
     }],
     "background": {

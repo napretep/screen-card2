@@ -7,6 +7,7 @@ open Fable.Core.JS
 open Microsoft.FSharp.Collections
 open app.common.funcs
 open app.common.obj
+open app.common.styleSheet
 
 type SpecificName=
   |FieldId of string
@@ -93,7 +94,7 @@ with
                      e
                      )  
   member this.select (selector:string) =
-    this.element.Value.querySelector(selector)
+    this.element.Value.querySelector(selector):?>HTMLElement
 end
 let getElementFromBrick (brick:Brick) (query:string):HTMLElement=
   brick.element.Value.querySelector(query):?>HTMLElement

@@ -88,7 +88,7 @@ module CardLib =
                   ] []
           ]
         ]
-        Div [Id <| CardLib_container; classes [Common_glass]] [
+        Div [Id CardLib_container; classes [Common_glass]] [
 
         ]
       ]
@@ -107,28 +107,39 @@ module CardLib =
     member val op_view = Op_View(this)
   and Op_View (env:Core) =
     member val env=env
-    member this.show =
-      DataStorage.readCardLib
-        .``then``(fun(data)->
-          DataStorage.readCards(data).``then``(
-            fun data'->this.loadItem(data')
-      ))
+    
 
-      env.env.root.appendChild this.env.view.element.Value|>ignore
-      this.env.state.IsShow<-true
     member this.hide =
       this.cleanItem
       this.env.view.element.Value.remove()
       this.env.state.IsShow<-false
     member this.cleanItem =
+      console.log"clean item"
       let body = this.env.view.hashmap[CardLib_container.S].element.Value
       for i=0 to body.children.length-1 do
         body.children[0].remove()
-    member this.loadItem (items:Save.Card seq) =
+    
+    member this.loadItem=
+      DataStorage.readCardLibReturnCard.``then``(
+        // fun boxCard->boxCard.``then`` (
+          fun (cards')->
+            let cards = unbox<seq<Save.Card>>cards'
+            cards|> Seq.iter this.initItemEvent
+            env.env.root.appendChild this.env.view.element.Value|>ignore
+            this.env.state.IsShow<-true 
+            // )
+        )
+        
+    member this.reload =
+      console.log"member this.reload"
+      this.cleanItem
+      this.loadItem
+    member this.show=
+      this.loadItem
+      
+    member this.initItemEvent (card:Save.Card) =
       let body = this.env.view.hashmap[CardLib_container.S].element.Value
-  
-      let iter(card:Save.Card)=
-        let text,img = 
+      let text,img = 
           match card.fields.Length with
           |0->
             card.homeUrl,""
@@ -140,25 +151,25 @@ module CardLib =
               card.fields|>Array.filter (fun e-> e.contentKind=1)|>Array.toList|>List.tryHead
             let img = result|>Option.map (fun e-> e.content) |> Option.defaultValue ""
             text,img
-        let brick = build (cardItem img text)
-        brick.Id<-card.Id
-        body.appendChild brick.element.Value|>ignore
-        let del = brick.hashmap[CardField_btns_del.S].element.Value
-        let get = brick.hashmap[CardField_btns_expand.S].element.Value
-        del.onclick <- fun e->
-          DataStorage.del(card.Id).``then``(fun e->
-            brick.element.Value.remove()          
+      let brick = build (cardItem img text)
+      brick.Id<-card.Id
+      body.appendChild brick.element.Value|>ignore
+      let del = brick.hashmap[CardField_btns_del.S].element.Value
+      let get = brick.hashmap[CardField_btns_expand.S].element.Value
+      del.onclick <- fun e->
+        DataStorage.removeCardsFromCardLib([|card.Id|]).``then``(
+          fun e->
+            console.log "del.onclick DataStorage.removeCardsFromCardLib"
+            this.reload
+            this.env.env.event.updateCards.Trigger(card.Id)|>ignore
+            this.env.env.removeMember this.env.env.hashMap[card.Id]
+         )|>ignore
+        
+      get.onclick<-fun e->
+        DataStorage.readCards([|card.Id|]).``then``(
+            fun cards->cards|>Seq.iter (fun (e:Save.Card)-> Card.load this.env.env e)
           )|>ignore
-        get.onclick<-fun e->
-          DataStorage.read([|card.Id|]).``then``(fun maybeCard->
-            maybeCard[card.Id]|>Option.iter(fun data->
-                let card' = data:?> Save.Card
-                card'.show<-true
-                Card.load this.env.env card'|>ignore
-              )
-            ()
-            )|>ignore
-      items|> Seq.iter iter  
+      ()  
       
   let Init (env:GlobalCore) (p:pointF) =
     let core = Core(
