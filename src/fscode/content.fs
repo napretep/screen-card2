@@ -163,50 +163,20 @@ let globalCore ={
   state = GlobalState.init
 }
 
-//ALL_EVENT here
-globalCore.event.updateCardLib.Publish.Add(fun e->
-    globalCore.getCardLibIfShow
-    |> Seq.iter (fun e->
-      let cardlib = e:?> CardLib.Core
-      cardlib.op_view.reload
-      ()
-      )
-  )
-globalCore.event.updateCards.Publish.Add(
-  fun e->
-    chromeRuntime.sendMessage {MsgToBackendHeader with purpose=CardStateUpdate;content=e;UUID=THISPAGE} |>ignore
-  )
+  
+  // globalCore.hashMap.Values|>Seq.filter (fun e->
+  //     console.log "202209070047"
+  //     console.log e
+  //     if e.type'=SaveKind.CardLib then
+  //       let core = e :?> CardLib.Core
+  //       core.state.IsShow
+  //     else
+  //       false
+  //     )|>Seq.toList
 
-globalCore.state.FrameDiv.onclick <- fun e->(
-  globalCore.state.setFocus globalCore.state.FrameDiv
-  ()
-  )
+
 //初始化 capturing frame的移动事件, 全部写在一个函数内
-let capturingFrameDragBar = globalCore.state.FrameDiv.children[2]:?>HTMLElement
-capturingFrameDragBar.onmousedown<-fun e->
-  let carrier = globalCore.state.FrameDiv
-  let oldMouseP = pointF.fromMouseEvent e
-  let oldCarrierP = pointF.fromElementBounding carrier
-  let mouseMoveEvent = globalCore.event.mouseMoving
-  let mouseUpEvent = globalCore.event.mouseUp
-  let mutable IsMoving = true
-  let mutable OnDragBarMouseMove = Handler<MouseEvent> (
-    fun sender e2 ->
-      if IsMoving && e2.buttons=1 then 
-        let newMouseP = pointF.fromMouseEvent e2
-        pointF.setElementPosition carrier (oldCarrierP+(newMouseP-oldMouseP))
-      ()
-    )
-  let mutable OnDragBarMouseUp =  Handler<MouseEvent> (
-    fun sender e3 ->
-      IsMoving <- false
-      mouseMoveEvent.Publish.RemoveHandler OnDragBarMouseMove
-      
-      ()
-    )
-  mouseMoveEvent.Publish.AddHandler OnDragBarMouseMove
-  mouseUpEvent.Publish.AddHandler OnDragBarMouseUp
-  ()
+
 
 let closeCapFrame ()= 
   size2d.setElementStyleSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
@@ -214,82 +184,8 @@ let closeCapFrame ()=
   for i=0 to u.children.length-1 do u.children[i].remove()
   globalCore.state.FrameDiv.remove()
 let CapFrameCancelBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_no}" :?>HTMLElement
-CapFrameCancelBtn.onclick <- fun e-> closeCapFrame()
-
 let CapFrameAcceptBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_ok}":?>HTMLElement
-CapFrameAcceptBtn.onclick <- fun e->
-  globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
-  Op_element.displayNone globalCore.state.FrameDiv
-  JS.setTimeout (fun ()->
-     chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
-     ()
-   ) 20|>ignore
-  ()
 
-let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
-  if globalCore.state.IsFrameDrawing && e.buttons=1 then
-    
-    let el_carrier = globalCore.state.FrameDiv
-    let el_self = el_carrier.children[0]:?>HTMLElement
-    let oldP = pointF.fromElementBounding el_carrier
-    let newP = pointF.set e.clientX e.clientY
-    let size = size2d.from2Point oldP newP
-    let newSize = {
-                   width = if size.width>0 then size.width else  0
-                   height =if size.height>0 then size.height else  0
-                   }
-    size2d.setElementStyleSize el_self newSize
-  ()
-  )
-
-let mutable DrawingCapFrameOnMouseDown =Handler<MouseEvent> ( fun sender e ->
-  let root = globalCore.root
-  globalCore.state.FrameDrawStartAt<- pointF.set e.clientX e.clientY
-  globalCore.state.IsFrameDrawing<- true
-  let frame = (root.appendChild globalCore.state.FrameDiv ):?> HTMLElement 
-  globalCore.state.setFocus frame
-  pointF.setElementPosition frame (pointF.set e.clientX e.clientY)
-  
-  globalCore.event.mouseMoving.Publish.AddHandler DrawingCapFrameOnMouseMove
-  ()
-  )
-let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
-  if globalCore.state.IsFrameDrawing then
-    globalCore.state.IsFrameDrawing<-false
-    let root = globalCore.root
-    // root.removeChild globalCore.state.FrameDiv  |> ignore
-    let btns = globalCore.state.FrameDiv.children[1]:?>HTMLElement
-    btns.classList.remove Common_displayNone.S |> ignore
-    globalCore.state.FrameDiv.children[2].classList.remove Common_displayNone.S |> ignore
-    
-    // root.classList.remove Common_mask.S
-    root |> Op_element.delMask |> Op_element.delFixed
-    
-    globalCore.event.mouseMoving.Publish.RemoveHandler DrawingCapFrameOnMouseMove
-    globalCore.event.mouseDown.Publish.RemoveHandler DrawingCapFrameOnMouseDown
-    ()
-  )
-
-
-globalCore.event.screenCapBegin.Publish.Add (fun card_id->
-    globalCore.state.ScreenCapCardId<- Some card_id
-    let root = globalCore.root
-    let kids = globalCore.root.children
-    //隐藏全部元素
-    for i=0 to  kids.length-1 do
-      let kid = kids[i]
-      kid.classList.add Common_displayNone.S
-      ()
-    closeCapFrame()
-    
-    //添加遮罩
-    // root.classList.add Common_mask.S
-    root |>Op_element.addMask |> Op_element.addFixed
-    globalCore.event.mouseDown.Publish.AddHandler DrawingCapFrameOnMouseDown
-    globalCore.event.mouseUp.Publish.AddHandler DrawingCapFrameOnMouseUp
-
-    ()
-  )
 
 
 
@@ -297,34 +193,8 @@ baseElem.appendChild AssistDot.view.element.Value |> ignore
 
 
 let cardLib = CardLib.Init globalCore (pointF.set 200 200)
-AssistDot.Subscribe.OpenCardLib.Add (fun ()->
-  if cardLib.state.IsShow then
-    cardLib.op_view.hide
-  else
-    cardLib.op_view.show|>ignore
-)
-AssistDot.Subscribe.CreateCard.Add(fun ()->
-  let newCard = Card.Init globalCore (pointF.set 200 200) (newGuid())
-  ()
-)
 
-window.onmousemove <- fun e->
-  globalCore.event.mouseMoving.Trigger(e)
-  match AssistDot.state.MoveBegin with 
-  |true -> AssistDot.EventHandler.WatchMouseMove e
-  |_ ->()
 
-window.onmouseup <- fun e->
-  globalCore.event.mouseUp.Trigger(e)
-  DataStorage.readAll.``then``(fun e-> console.log(e))
-  match AssistDot.state.MoveBegin with
-  |true ->
-    AssistDot.state.MoveBegin<-false 
-  |_ -> ()
-
-window.onmousedown <- fun e->
-  globalCore.event.mouseDown.Trigger(e)
-  ()
 let updateCardsStateFromDB() =
   
   let getCurrentCardInDB =
@@ -371,7 +241,7 @@ let updateSingleCard(card_id)=
           |2.0,_,true ->Card.load globalCore card 
           |_,true,_->
             if not card.show || card.homeUrl<>window.location.href then
-              globalCore.removeMember globalCore.hashMap[card.Id]
+              globalCore.removeMember card.Id
               ()
           |_,_,_ -> ()
         )
@@ -382,6 +252,50 @@ let updateSingleCard(card_id)=
   
   
 let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMsgActor.Tab}
+
+
+
+
+
+console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
+
+//ALL_EVENT here
+CapFrameCancelBtn.onclick <- fun e-> closeCapFrame()
+
+CapFrameAcceptBtn.onclick <- fun e->
+  globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
+  Op_element.displayNone globalCore.state.FrameDiv
+  JS.setTimeout (fun ()->
+     chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
+     ()
+   ) 20|>ignore
+  ()
+
+AssistDot.Subscribe.OpenCardLib.Add (fun ()->
+  if cardLib.state.IsShow then
+    cardLib.op_view.hide
+  else
+    cardLib.op_view.show|>ignore
+)
+AssistDot.Subscribe.CreateCard.Add(fun ()->
+  let newCard = Card.Init globalCore (pointF.set 200 200) (newGuid())
+  ()
+)
+
+window.onmousemove <- fun e->
+  globalCore.event.mouseMoving.Trigger(e)
+  match AssistDot.state.MoveBegin with 
+  |true -> AssistDot.EventHandler.WatchMouseMove e
+  |_ ->()
+
+window.onmouseup <- fun e->
+  globalCore.event.mouseUp.Trigger(e)
+  DataStorage.readAll.``then``(fun e-> console.log(e))
+  match AssistDot.state.MoveBegin with
+  |true ->
+    AssistDot.state.MoveBegin<-false 
+  |_ -> ()
+
 chromeRuntime.onMessage.addListener (
   MsgReceivedCallback (fun msg ->
     match msg.purpose with
@@ -434,8 +348,6 @@ chromeRuntime.onMessage.addListener (
         
     | _ -> msg |> Pip.log)
 )
-
-
 globalCore.event.screenCapOk.Publish.Add (fun ()->
   let kids = globalCore.root.children
   for i=0 to  kids.length-1 do
@@ -450,9 +362,122 @@ globalCore.event.screenCapOk.Publish.Add (fun ()->
   JS.setTimeout (fun ()->cardCore.op_state.saveAndRefresh|>ignore) 100
   ()
   )
-
-console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
 document.onload <- (fun e -> console.log $"document.loaded at {thisTime.toLocaleString ()}")
+
+window.onmousedown <- fun e->
+  globalCore.event.mouseDown.Trigger(e)
+  ()
+let capturingFrameDragBar = globalCore.state.FrameDiv.children[2]:?>HTMLElement
+capturingFrameDragBar.onmousedown<-fun e->
+  let carrier = globalCore.state.FrameDiv
+  let oldMouseP = pointF.fromMouseEvent e
+  let oldCarrierP = pointF.fromElementBounding carrier
+  let mouseMoveEvent = globalCore.event.mouseMoving
+  let mouseUpEvent = globalCore.event.mouseUp
+  let mutable IsMoving = true
+  let mutable OnDragBarMouseMove = Handler<MouseEvent> (
+    fun sender e2 ->
+      if IsMoving && e2.buttons=1 then 
+        let newMouseP = pointF.fromMouseEvent e2
+        pointF.setElementPosition carrier (oldCarrierP+(newMouseP-oldMouseP))
+      ()
+    )
+  let mutable OnDragBarMouseUp =  Handler<MouseEvent> (
+    fun sender e3 ->
+      IsMoving <- false
+      mouseMoveEvent.Publish.RemoveHandler OnDragBarMouseMove
+      
+      ()
+    )
+  mouseMoveEvent.Publish.AddHandler OnDragBarMouseMove
+  mouseUpEvent.Publish.AddHandler OnDragBarMouseUp
+  ()
+globalCore.event.updateCardLib.Publish.Add(fun e->
+    // console.log "globalCore.event.updateCardLib.Publish"
+    console.log "cardLib.state.IsShow"
+    console.log cardLib.state.IsShow
+    if cardLib.state.IsShow  then
+       cardLib.op_view.delayReload
+       ()
+    ()
+      
+  )
+globalCore.event.updateCards.Publish.Add(
+  fun e->
+    chromeRuntime.sendMessage {MsgToBackendHeader with purpose=CardStateUpdate;content=e;UUID=THISPAGE} |>ignore
+  )
+
+
+let mutable DrawingCapFrameOnMouseMove = Handler<MouseEvent> ( fun sender e->
+  if globalCore.state.IsFrameDrawing && e.buttons=1 then
+    
+    let el_carrier = globalCore.state.FrameDiv
+    let el_self = el_carrier.children[0]:?>HTMLElement
+    let oldP = pointF.fromElementBounding el_carrier
+    let newP = pointF.set e.clientX e.clientY
+    let size = size2d.from2Point oldP newP
+    let newSize = {
+                   width = if size.width>0 then size.width else  0
+                   height =if size.height>0 then size.height else  0
+                   }
+    size2d.setElementStyleSize el_self newSize
+  ()
+  )
+let mutable DrawingCapFrameOnMouseDown =Handler<MouseEvent> ( fun sender e ->
+  let root = globalCore.root
+  globalCore.state.FrameDrawStartAt<- pointF.set e.clientX e.clientY
+  globalCore.state.IsFrameDrawing<- true
+  let frame = (root.appendChild globalCore.state.FrameDiv ):?> HTMLElement 
+  globalCore.state.setFocus frame
+  pointF.setElementPosition frame (pointF.set e.clientX e.clientY)
+  
+  globalCore.event.mouseMoving.Publish.AddHandler DrawingCapFrameOnMouseMove
+  ()
+  )
+let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
+  if globalCore.state.IsFrameDrawing then
+    globalCore.state.IsFrameDrawing<-false
+    let root = globalCore.root
+    // root.removeChild globalCore.state.FrameDiv  |> ignore
+    let btns = globalCore.state.FrameDiv.children[1]:?>HTMLElement
+    btns.classList.remove Common_displayNone.S |> ignore
+    globalCore.state.FrameDiv.children[2].classList.remove Common_displayNone.S |> ignore
+    
+    // root.classList.remove Common_mask.S
+    root |> Op_element.delMask |> Op_element.delFixed
+    
+    globalCore.event.mouseMoving.Publish.RemoveHandler DrawingCapFrameOnMouseMove
+    globalCore.event.mouseDown.Publish.RemoveHandler DrawingCapFrameOnMouseDown
+    ()
+  )
+
+
+
+
+globalCore.event.screenCapBegin.Publish.Add (fun card_id->
+    globalCore.state.ScreenCapCardId<- Some card_id
+    let root = globalCore.root
+    let kids = globalCore.root.children
+    //隐藏全部元素
+    for i=0 to  kids.length-1 do
+      let kid = kids[i]
+      kid.classList.add Common_displayNone.S
+      ()
+    closeCapFrame()
+    
+    //添加遮罩
+    // root.classList.add Common_mask.S
+    root |>Op_element.addMask |> Op_element.addFixed
+    globalCore.event.mouseDown.Publish.AddHandler DrawingCapFrameOnMouseDown
+    globalCore.event.mouseUp.Publish.AddHandler DrawingCapFrameOnMouseUp
+
+    ()
+  )
+
+globalCore.state.FrameDiv.onclick <- fun e->(
+  globalCore.state.setFocus globalCore.state.FrameDiv
+  ()
+  )
 
 
 updateCardsStateFromDB()

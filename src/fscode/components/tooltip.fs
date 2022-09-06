@@ -46,14 +46,14 @@ type Tooltip () =
              ] [])
 
 
-let mkBtn icon id' tooltip position =
+let mkBtn icon id' tooltip tooltipPosition =
   Span [
     classes [Common_glass;Common_btn]
     Id id'
     InnerHtml <| icon
     ]
     [
-        Tooltip.el [tooltip;position]
+        Tooltip.el [tooltip;tooltipPosition]
     ]
 
 let mkBtnMove id' directionIcon  position=

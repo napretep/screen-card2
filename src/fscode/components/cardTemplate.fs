@@ -14,6 +14,7 @@ open app.common.DSL
 open Browser.Types
 open Browser
 open Fetch
+open PromiseImpl
 open Fable.Core
 open FSharp.Control
 open app.components.tooltip
@@ -289,18 +290,19 @@ module Card =
       console.log env.state.size
 
     member this.saveAndRefresh =
-      let job = async {
-          do! Async.Sleep 50
-          this.save.``then``( fun x-> this.refresh )
-      }
-      Async.RunSynchronously job
-      // setTimeout (fun e->
+      // let job = async {
+      //     do! Async.Sleep 50
       //     this.save.``then``( fun x-> this.refresh )
-      //     ()
-      //     ) 50
+      // }
+      // Async.RunSynchronously job
+      setTimeout (fun e->
+          this.save.``then``( fun x-> this.refresh )
+          ()
+          ) 50
     member this.refresh =
-      setTimeout (fun e->this.env.env.event.updateCards.Trigger(this.env.Id)) 200|>ignore
-      ()
+      promise {
+        setTimeout (fun e->this.env.env.event.updateCards.Trigger(this.env.Id)) 200|>ignore
+      }
     member this.save: Promise<unit> =
       let fieldsState = this.env.view.hashmap[Card_body.S].children
                         |> List.map (fun (b:Brick)->this.env.fieldState[b.Id].Save)|>List.toArray
@@ -332,16 +334,23 @@ module Card =
     member this.newSave_Refresh =
         promise {
           let! r1 = this.save
-          this.refresh
+          let! r2 = this.refresh
+          return r2
         } 
   and  Op_View (env:Core) =
     member val env = env
     member this.show =
       this.env.env.addMember this.env
-      DataStorage.appendToListUnique CardLib.S [|this.env.Id|]
+      promise{
+        let! a= DataStorage.appendCardToCardLib [|this.env.Id|]
+        a
+      }
+      
+      
+      
     member this.hide =
       this.env.op_state.save.``then``( fun e->
-        this.env.env.removeMember this.env
+        this.env.env.removeMember this.env.Id
       )
       DataStorage.removeFromList window.location.href [|this.env.Id|]
       DataStorage.removeFromList TravelCards.S [|this.env.Id|]
@@ -700,7 +709,6 @@ module Card =
     // self.onmouseup <- fun e->
     //   setTimeout (fun e->core.op_state.save.``then``(fun e->core.op_state.refresh) |> ignore) 20
     self.onmouseup <- fun e->
-      console.log e.target
       core.op_state.saveAndRefresh
       ()
     addTxt.onclick<- fun e->
@@ -770,19 +778,16 @@ module Card =
       core.state.IsMoving <-false
     env.addMember core
     core.op_view.setPinColor
-    promise{
+    promise {
       let! r1=core.op_state.newSave_Refresh
       core.env.event.updateCardLib.Trigger()
       return r1
     }
-    
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core.op_view.show
     core
   //从内存读取
   let load (env:GlobalCore) (card:Save.Card) =
-    console.log "load card :"
-    console.log card
     let p = pointF.fromTuple card.position
     let pin = PinState.fromNumber card.pin
     let core =
@@ -790,8 +795,6 @@ module Card =
       |Some iCore ->
         iCore:?>Core 
       |_->Init env p card.Id
-    console.log "load card:"
-    console.log card
     core.state.clone card // 这个地方 很重要, 以后新增什么属性, 需要看看有没有成功克隆
     core.op_view.init
     core.op_field.clearFields

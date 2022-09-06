@@ -9,7 +9,7 @@ open Fable.Core
 open Fable.Core.JS
 open Fable.Core.JsInterop
 open Browser.Dom
-
+open Fetch
 
 
 
@@ -127,24 +127,41 @@ type DataStorage =
         ))    
       
     static member appendToListUnique (key:string) (values:obj array)=
-      chromeStorage.local.get(ResizeArray[key]).``then``(
-        fun data->
-            let result =
-              console.log data
-              let newData = data.[key]
+      promise {
+        let! maybeData = chromeStorage.local.get(ResizeArray[key])
+        let  oldData = maybeData.[key]
                           |>Option.map (fun (d)->
                               d:?>obj array |> Seq.toList
                             )
-                          |>Option.defaultValue [] 
-              values|>Seq.fold (fun (sum:obj list) value ->
-                                  if newData|>List.contains value|> not then
+                          |>Option.defaultValue []
+        let result =  (values |>Seq.fold (fun (sum:obj list) value ->
+                                  if oldData|>List.contains value|> not then
                                     value::sum
                                   else
                                     sum
-                                  ) [] 
-                                
-            DataStorage.set key (AllowStoreType.Array' (result|>Seq.toArray))
-        ) 
+                                  ) oldData )
+        DataStorage.set key (AllowStoreType.Array' (result|>Seq.toArray))
+        
+      }
+      //
+      // chromeStorage.local.get(ResizeArray[key]).``then``(
+      //   fun data->
+      //       let result =
+      //         console.log data
+      //         let newData = data.[key]
+      //                     |>Option.map (fun (d)->
+      //                         d:?>obj array |> Seq.toList
+      //                       )
+      //                     |>Option.defaultValue [] 
+      //         values|>Seq.fold (fun (sum:obj list) value ->
+      //                             if newData|>List.contains value|> not then
+      //                               value::sum
+      //                             else
+      //                               sum
+      //                             ) [] 
+      //                           
+      //       DataStorage.set key (AllowStoreType.Array' (result|>Seq.toArray))
+      //   ) 
 
     
     //读取DB中的list, 并去掉指定的元素
@@ -156,16 +173,13 @@ type DataStorage =
             match maybeData[key] with
             |Some d-> d:?> string array
             |_ -> [||]
-          
           let newData = data |>Seq.filter (fun e-> values|>Seq.contains e |> not )|>Seq.toArray 
-          console.log $"static member removeFromList {key}"
-          console.log newData
           DataStorage.set key (AllowStoreType.Array' newData)
       )
       
     static member moveFromAToBList (A:string) (B:string) (value':string array) =
       let value = value'|>Seq.map (fun v->v:>obj) |>Seq.toArray
-      (DataStorage.removeFromList A value ).``then``(fun e->DataStorage.appendToListUnique B (value))
+      DataStorage.removeFromList A value 
         
       
        
@@ -185,7 +199,11 @@ type DataStorage =
             )|>Option.defaultValue [||]
       )
     static member readCardLibReturnCard=
-      DataStorage.readCardLibReturnId.``then``( DataStorage.readCards )
+      promise {
+        let! ids= DataStorage.readCardLibReturnId
+        let! cards = DataStorage.readCards(ids)
+        return cards
+      }
     static member readTravelCards =
       DataStorage.read([|TravelCards.S|]).``then``(
         fun maybeData->
@@ -196,12 +214,21 @@ type DataStorage =
             data
             )|>Option.defaultValue [||]
         )
-    static member readCards (card_ids:string array)=
-      DataStorage.read(card_ids).``then``(
-        fun maybeData ->
-        card_ids|>Seq.filter(fun card_id-> maybeData[card_id].IsSome)
-                |>Seq.map (fun card_id->maybeData[card_id].Value:?>Save.Card) 
-      )
+    static member readCards (card_ids:string array) :Promise<seq<Save.Card>> =
+      promise {
+        let! maybeCards = DataStorage.read(card_ids)
+        // cards<-unbox<seq<Save.Card>>(card_ids|>Seq.filter(fun card_id-> maybeCards[card_id].IsSome))
+        return card_ids
+        |>Seq.map (fun card_id->unbox<Save.Card option>maybeCards[card_id])
+        |>Seq.filter(fun maybeCard->maybeCard.IsSome)
+        |>Seq.map (fun card->card.Value)
+      }
+      // cards
+      // DataStorage.read(card_ids).``then``(
+      //   fun maybeData ->
+      //   card_ids|>Seq.filter(fun card_id-> maybeData[card_id].IsSome)
+      //           |>Seq.map (fun card_id->maybeData[card_id].Value:?>Save.Card)
+      // )
     static member readCardsFromUrl (url:string)=
       DataStorage.read([|url|]).``then``(
           fun maybe'->
@@ -209,7 +236,21 @@ type DataStorage =
             data
         )
     static member clear = chromeStorage.local.clear ()
+    static member readCardLib =
+      promise {
+        let! x= DataStorage.read [|CardLib.S|]
+        let cardLib =unbox<string array option>x.[CardLib.S]
+        return cardLib|>Option.defaultValue [||]
+      }
     static member removeCardsFromCardLib (card_ids:string array)=
       DataStorage.delMany(card_ids).``then``(
         fun e->  DataStorage.removeFromList CardLib.S (card_ids|>Seq.map(fun e->e:>obj)|>Seq.toArray)
         )
+    static member appendCardToCardLib (card_id) =
+      promise{
+         let! a= DataStorage.appendToListUnique CardLib.S card_id
+        
+         let! b= DataStorage.readCardLib
+         
+         return b
+      }

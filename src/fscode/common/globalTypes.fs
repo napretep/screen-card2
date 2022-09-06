@@ -121,16 +121,16 @@ with
   member inline this.addMember (core:ICore) =
     this.root.appendChild core.view.element.Value |>ignore
     this.hashMap <- this.hashMap.Add (core.Id,core)
-  member inline this.removeMember (core:ICore) =
-    console.debug (core.Id+" removed")
-    core.view.element.Value.remove()
-    this.safeRemoveMember core
-  member this.safeRemoveMember (core:ICore) =
-    if this.hashMap.Keys |> Seq.contains core.Id then
-      this.hashMap <- this.hashMap.Remove core.Id
-    ()
-  member this.getCardLibIfShow =
-    this.hashMap.Values|>Seq.filter (fun e->e.type'=SaveKind.CardLib)
+  member inline this.removeMember (core_id:string) =
+    console.debug (core_id+" removed")
+    if this.hashMap.Keys |> Seq.contains core_id then
+      this.hashMap[core_id].view.element.Value.remove()
+      this.hashMap <- this.hashMap.Remove core_id
+  // member this.safeRemoveMember (core:ICore) =
+  //   if this.hashMap.Keys |> Seq.contains core.Id then
+  //     this.hashMap <- this.hashMap.Remove core.Id
+  //   ()
+
   
   
   // member this.saveTransTab =

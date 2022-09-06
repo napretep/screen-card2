@@ -13,7 +13,7 @@ open Browser.Types
 open Browser
 open Fable.Core
 open FSharp.Control
-
+open app.components.tooltip
 
 module CardLib =
   type [<StringEnum>]  Msg = |None|Close
@@ -41,14 +41,10 @@ module CardLib =
       ]
       Div [Id CardLib_card_btns;
            ] [
-        Div [classes [Common_glass;Common_btn];
-             InnerHtml ICON.trashBin
-             Id CardField_btns_del
-              ] []
-        Div [classes [Common_glass;Common_btn]
-             InnerHtml <| ICON.expand
-             Id CardField_btns_expand
-             ] []
+        mkBtn ICON.trashBin CardField_btns_del "删除卡片" "l"
+        mkBtn ICON.expand CardField_btns_expand "打开卡片" "l"
+        mkBtn ICON.backlink  CardLib_card_btns_backlink "溯源卡片" "l"
+
       ]
   ]
   let testCard = cardItem "https://freefrontend.com/assets/img/css-glassmorphism/2021-feedback-modal-design.jpg" "1231231231 aa a a a a a"
@@ -78,14 +74,16 @@ module CardLib =
                 InnerHtml <| ICON.HorizontalMoveBar
           ] []
           Span [Id CardLib_toolbar_right ] [
-            Span [classes [Common_glass;Common_btn]
-                  InnerHtml <| ICON.pin
-                  Id CardLib_toolbar_right_pin
-                  ] []
-            Span [classes [Common_glass;Common_btn]
-                  InnerHtml <| ICON.close
-                  Id CardLib_toolbar_right_close
-                  ] []
+            mkBtn ICON.refresh CardLib_card_btns_refresh "刷新卡片" "t"
+            // Span [classes [Common_glass;Common_btn]
+            //       InnerHtml <| ICON.pin
+            //       Id CardLib_toolbar_right_pin
+            //       ] []
+            mkBtn  ICON.close CardLib_toolbar_right_close "关闭卡片库" "t"
+            // Span [classes [Common_glass;Common_btn]
+            //       InnerHtml <| ICON.close
+            //       Id CardLib_toolbar_right_close
+            //       ] []
           ]
         ]
         Div [Id CardLib_container; classes [Common_glass]] [
@@ -95,9 +93,9 @@ module CardLib =
     ]
   let view = build atom
   
-  module method =
-    let hide () = view.element.Value.remove()
-    let show () =  view.element.Value
+  // module method =
+  //   let hide () = view.element.Value.remove()
+  //   let show () =  view.element.Value
     
   type Core(env:GlobalCore,view:Brick,Id:string) as this=
     inherit ICore(view,Id,SaveKind.CardLib)
@@ -105,39 +103,49 @@ module CardLib =
     member val state = state with get,set
     member val event = Event.init with get,set
     member val op_view = Op_View(this)
+    member val body = view.hashmap[CardLib_container.S]
+    
   and Op_View (env:Core) =
     member val env=env
-    
-
     member this.hide =
       this.cleanItem
       this.env.view.element.Value.remove()
       this.env.state.IsShow<-false
     member this.cleanItem =
       console.log"clean item"
-      let body = this.env.view.hashmap[CardLib_container.S].element.Value
-      for i=0 to body.children.length-1 do
-        body.children[0].remove()
+      let body = this.env.body.element.Value
+      [for i=0 to body.children.length-1 do body.children[i] ]
+      |>Seq.iter(fun el-> el.remove())
+        // body.children[i].remove()
     
     member this.loadItem=
-      DataStorage.readCardLibReturnCard.``then``(
-        // fun boxCard->boxCard.``then`` (
-          fun (cards')->
-            let cards = unbox<seq<Save.Card>>cards'
-            cards|> Seq.iter this.initItemEvent
-            env.env.root.appendChild this.env.view.element.Value|>ignore
-            this.env.state.IsShow<-true 
-            // )
-        )
-        
-    member this.reload =
-      console.log"member this.reload"
-      this.cleanItem
-      this.loadItem
-    member this.show=
-      this.loadItem
+      promise{
+        let! cards = DataStorage.readCardLibReturnCard
+        console.log " member this.loadItem="
+        console.log (cards|>Seq.toArray)
+        cards
+        |>Seq.map this.initItem
+        |>Seq.iter (fun e-> env.body.element.Value.appendChild e.element.Value|>ignore)
+      }
       
-    member this.initItemEvent (card:Save.Card) =
+        
+    member this.delayReload =
+      JS.setTimeout (fun e->
+        this.cleanItem
+        this.loadItem|>ignore) 200
+      
+      
+    member this.show=
+      this.cleanItem
+      promise{
+        let! x= this.loadItem
+        this.env.env.root.appendChild this.env.view.element.Value
+        this.env.state.IsShow<-true 
+      }
+      
+    //包括了brick和event
+    member this.initItem (card:Save.Card) :Brick =
+      console.log card
       let body = this.env.view.hashmap[CardLib_container.S].element.Value
       let text,img = 
           match card.fields.Length with
@@ -159,17 +167,16 @@ module CardLib =
       del.onclick <- fun e->
         DataStorage.removeCardsFromCardLib([|card.Id|]).``then``(
           fun e->
-            console.log "del.onclick DataStorage.removeCardsFromCardLib"
-            this.reload
+            this.delayReload
             this.env.env.event.updateCards.Trigger(card.Id)|>ignore
-            this.env.env.removeMember this.env.env.hashMap[card.Id]
+            this.env.env.removeMember card.Id
          )|>ignore
         
       get.onclick<-fun e->
         DataStorage.readCards([|card.Id|]).``then``(
             fun cards->cards|>Seq.iter (fun (e:Save.Card)-> Card.load this.env.env e)
           )|>ignore
-      ()  
+      brick
       
   let Init (env:GlobalCore) (p:pointF) =
     let core = Core(
@@ -178,12 +185,18 @@ module CardLib =
       Id=CardLib_self.S
       )
     let moveBar = view.hashmap[CardLib_moveBar.S].element.Value
-    let carrier = view.hashmap[CardLib_carrier.S].element.Value
+    let body = core.body.element.Value
+    let refresh = view.hashmap[CardLib_card_btns_refresh.S].element.Value
     let close = view.hashmap[CardLib_toolbar_right_close.S].element.Value
+    refresh.onclick <- fun e->
+      core.op_view.delayReload
+      ()
+      
     close.onclick <- fun e->
       core.op_view.hide 
     moveBar.onmousedown<-fun e->
-      let oldEP = pointF.fromElementBounding carrier
+      let root =core.view.element.Value
+      let oldEP = pointF.fromElementBounding root
       let oldMP = pointF.fromMouseEvent e
       let mutable IsMoving = true     
       core.env.root|> Op_element.addMask |> ignore
@@ -191,7 +204,7 @@ module CardLib =
           fun sender e2->
           if IsMoving && e2.buttons =1 then    
             let newMouseP = pointF.fromMouseEvent e2
-            pointF.setElementPosition carrier (oldEP+(newMouseP-oldMP))
+            pointF.setElementPosition root (oldEP+(newMouseP-oldMP))
             ()
         )
       let onBtnUpHandle = Handler<MouseEvent>(

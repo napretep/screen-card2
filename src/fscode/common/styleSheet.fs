@@ -40,6 +40,8 @@ type [<StringEnum>] CssClass =
     |CardLib_card_content
     |CardLib_card_btns
     |CardLib_searchInput
+    |CardLib_card_btns_backlink
+    |CardLib_card_btns_refresh
     |Card_carrier
     |Card_self
     |Card_header
@@ -305,6 +307,7 @@ let commonStyle = $"""
     height: min-content;
     font-size: 0.5rem;
     font-family: "Microsoft JhengHei Light";
+    background:white;
 }}
 .{Common_zindexFocus}{{
 	z-index:9999999;
