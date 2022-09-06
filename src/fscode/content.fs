@@ -164,28 +164,21 @@ let globalCore ={
 }
 
   
-  // globalCore.hashMap.Values|>Seq.filter (fun e->
-  //     console.log "202209070047"
-  //     console.log e
-  //     if e.type'=SaveKind.CardLib then
-  //       let core = e :?> CardLib.Core
-  //       core.state.IsShow
-  //     else
-  //       false
-  //     )|>Seq.toList
+
 
 
 //初始化 capturing frame的移动事件, 全部写在一个函数内
+let rootCarrierRestore() =
+  console.log"rootCarrierRestore 被调用了"
+  globalCore.root
+  |>Op_element.getIterableKids
+  |>List.iter (fun e->Op_element.displayNonNone e|>ignore)
 
-
-let closeCapFrame ()= 
-  size2d.setElementStyleSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
-  let u = globalCore.state.FrameDiv.children[0]:?>HTMLElement
-  for i=0 to u.children.length-1 do u.children[i].remove()
+let closeCapFrame() = 
+  // size2d.setElementStyleSize (globalCore.state.FrameDiv.children[0]:?>HTMLElement) size2d.zero
   globalCore.state.FrameDiv.remove()
 let CapFrameCancelBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_no}" :?>HTMLElement
 let CapFrameAcceptBtn = globalCore.state.FrameDiv.querySelector $"#{CapturingFrame_btns_ok}":?>HTMLElement
-
 
 
 
@@ -196,39 +189,34 @@ let cardLib = CardLib.Init globalCore (pointF.set 200 200)
 
 
 let updateCardsStateFromDB() =
+  console.log ("updateCardsStateFromDB")
   
-  let getCurrentCardInDB =
+  let getCurrentCardInDB() =
     let currentCardsLi = globalCore.hashMap.Keys |>Seq.filter (fun key->
         globalCore.hashMap[key].type'=SaveKind.Card
         ) 
     DataStorage.readCards(currentCardsLi|>Seq.toArray)
-  //1 更新随行卡片
-  let removeNoLongerTravelCards(travelCards:Save.Card seq)=
-    console.log ("travelCards at "+thisTime.toLocaleString())
-    console.log (travelCards|>Seq.toArray)
-    //去掉卡片
-    getCurrentCardInDB.``then``(
-      fun cards ->
-        cards|> Seq.map (
-          fun card->
-            if card.pin<>2 && (card.show=false || card.homeUrl <> window.location.href) then
-              (globalCore.hashMap[card.Id]:?>Card.Core).op_view.hide |> ignore
-            ()    
-          )|>Seq.toArray 
-      ).``then``(fun e->
-        console.log ("travelCards to load "+thisTime.toLocaleString())
-        console.log (travelCards|>Seq.toArray)
-        travelCards|>Seq.map (Card.load globalCore)|>Seq.toArray
-      )
-    //更新卡片
-    
 
-      
-  DataStorage.readTravelCards.``then``(
-    fun data ->DataStorage.readCards(data).``then``(
-        removeNoLongerTravelCards
+  let cardExistRule(cards:seq<Save.Card>)=
+    let thisUrl = window.location.href
+    cards|>Seq.iter(fun card ->
+      //满足删除规则的, 从当前网页删除
+      if card.pin<>2 && ( not card.show || (card.homeUrl<>thisUrl)) then
+        globalCore.removeMember card.Id
+      //满足保留规则的, 在当前网页加载
+      else
+        Card.load globalCore card|>ignore
       )
-  )
+  promise{
+    let! card_ids =  DataStorage.readTravelCardIds
+    let! travelCards = DataStorage.readCards(card_ids)
+    let! CurrentCards = getCurrentCardInDB()
+    let! homeURLCards = DataStorage.getHomeUrlCards(window.location.href)
+    CurrentCards |> cardExistRule
+    homeURLCards |> cardExistRule
+    // homeURLCards|>Seq.filter (fun card-> CurrentCards|>Seq.contains card)
+    travelCards|>Seq.map (Card.load globalCore)|>Seq.toArray
+  }
   
 let updateSingleCard(card_id)=
   DataStorage.readCards([|card_id|]).``then``(
@@ -236,9 +224,8 @@ let updateSingleCard(card_id)=
         cards|>
         Seq.map (
         fun (card:Save.Card)->
-          console.log card
           match (card.pin, globalCore.hashMap.Keys |> Seq.contains card_id,card.show)   with
-          |2.0,_,true ->Card.load globalCore card 
+          |2.0,_,true ->Card.load globalCore card  |>ignore
           |_,true,_->
             if not card.show || card.homeUrl<>window.location.href then
               globalCore.removeMember card.Id
@@ -260,7 +247,9 @@ let MsgToPopupHeader = {RuntimeMsgHeader.popupAsReceiver with sender = RuntimeMs
 console.log $" this is content.js from scapp2 version={thisTime.toLocaleString ()}"
 
 //ALL_EVENT here
-CapFrameCancelBtn.onclick <- fun e-> closeCapFrame()
+CapFrameCancelBtn.onclick <- fun e->
+  closeCapFrame()
+  rootCarrierRestore()
 
 CapFrameAcceptBtn.onclick <- fun e->
   globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
@@ -315,7 +304,7 @@ chromeRuntime.onMessage.addListener (
         canvas.width <- r.width
         canvas.height <- r.height
         let context = canvas.getContext_2d()
-        console.log(r)
+        
         context.drawImage(U3.Case1 img,
                           r.left,r.top,r.width,r.height,0,0,r.width,r.height)
         context.clip()
@@ -331,29 +320,26 @@ chromeRuntime.onMessage.addListener (
       ()
     | ShowContent -> msg.content |> Pip.log
     | UserActivatedThisPage ->
-      console.log "UserActivatedThisPage"
-      DataStorage.readAll.``then``(
-        fun data->
-          console.log ("UserActivatedThisPage"+ (thisTime.toLocaleString()))
-          console.log data
-          )
-       |>ignore 
+      // console.log "UserActivatedThisPage"
+      // DataStorage.readAll.``then``(
+      //   fun data->
+      //     console.log ("UserActivatedThisPage"+ (thisTime.toLocaleString()))
+      //     console.log data
+      //     )
+       // |>ignore 
       updateCardsStateFromDB()
       |> ignore
     | CardStateUpdate->
       if msg.UUID <> THISPAGE then
-        console.log "CardStateUpdate"
+        // console.log "CardStateUpdate"
         let cardId =  msg.content:?>string
         updateSingleCard(cardId)|> ignore
         
     | _ -> msg |> Pip.log)
 )
 globalCore.event.screenCapOk.Publish.Add (fun ()->
-  let kids = globalCore.root.children
-  for i=0 to  kids.length-1 do
-    let kid = kids[i]
-    kid.classList.remove Common_displayNone.S
-    ()
+
+  rootCarrierRestore()
   let card_id = globalCore.state.ScreenCapCardId.Value
   let dataurl = globalCore.state.ScreenCapDataUrl
   let cardCore = globalCore.hashMap[card_id]:?>Card.Core
@@ -394,8 +380,8 @@ capturingFrameDragBar.onmousedown<-fun e->
   ()
 globalCore.event.updateCardLib.Publish.Add(fun e->
     // console.log "globalCore.event.updateCardLib.Publish"
-    console.log "cardLib.state.IsShow"
-    console.log cardLib.state.IsShow
+    // console.log "cardLib.state.IsShow"
+    // console.log cardLib.state.IsShow
     if cardLib.state.IsShow  then
        cardLib.op_view.delayReload
        ()
@@ -452,7 +438,26 @@ let mutable DrawingCapFrameOnMouseUp = Handler<MouseEvent> ( fun sender e->
   )
 
 
-
+//调用图 
+(*
+env.event.screenCapBegin.Trigger(core.Id)
+globalCore.event.screenCapBegin.Publish.Add
+开始draw
+  DrawingCapFrameOnMouseDown
+  DrawingCapFrameOnMouseMove
+  DrawingCapFrameOnMouseUp
+等待clip
+  CapFrameCancelBtn.onclick
+    closeCapFrame()
+    rootCarrierRestore()
+  CapFrameAcceptBtn.onclick
+    chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
+      chromeRuntime.onMessage.addListener
+        purpose=ScreenCapOK
+          globalCore.event.screenCapOk.Trigger()
+          globalCore.event.screenCapOk.Publish.Add (fun ()->
+        purpose=ScreenCapNo
+*)
 
 globalCore.event.screenCapBegin.Publish.Add (fun card_id->
     globalCore.state.ScreenCapCardId<- Some card_id

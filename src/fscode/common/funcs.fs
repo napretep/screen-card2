@@ -253,16 +253,19 @@ type Op_element =
     static member delFixed (E:HTMLElement) =
         E.style.position <- ""
         E
-    static member displayNone  (E:HTMLElement) = 
-        E.style.display <-"none"
-        E
-    static member displayNonNone (e:HTMLElement)=
-        e.style.display <-""
-        e
+
     static member switchClass  (E:HTMLElement) add remove =
         E.classList.remove remove
         E.classList.add add
     static member removeChildSafely (E:HTMLElement) (kid:HTMLElement)=
         if E.contains kid then
             E.removeChild kid
-            () 
+            ()
+    static member getIterableKids (E:HTMLElement)=
+        [for i=0 to E.children.length-1 do E.children[i]:?>HTMLElement]
+    static member displayNone  (E:HTMLElement) = 
+        E.classList.add Common_displayNone.S
+        E
+    static member displayNonNone (e:HTMLElement)=
+        e.classList.remove Common_displayNone.S
+        e            

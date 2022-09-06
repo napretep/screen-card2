@@ -178,9 +178,9 @@ type DataStorage =
       )
       
     static member moveFromAToBList (A:string) (B:string) (value':string array) =
-      let value = value'|>Seq.map (fun v->v:>obj) |>Seq.toArray
+      let value =unbox<obj array> value'
       DataStorage.removeFromList A value 
-        
+      DataStorage.appendToListUnique B value
       
        
     static member readAll = chromeStorage.local.get()
@@ -204,7 +204,7 @@ type DataStorage =
         let! cards = DataStorage.readCards(ids)
         return cards
       }
-    static member readTravelCards =
+    static member readTravelCardIds =
       DataStorage.read([|TravelCards.S|]).``then``(
         fun maybeData->
           console.log ("static member readTravelCards")
@@ -229,7 +229,7 @@ type DataStorage =
       //   card_ids|>Seq.filter(fun card_id-> maybeData[card_id].IsSome)
       //           |>Seq.map (fun card_id->maybeData[card_id].Value:?>Save.Card)
       // )
-    static member readCardsFromUrl (url:string)=
+    static member readCardIdsFromUrl (url:string)=
       DataStorage.read([|url|]).``then``(
           fun maybe'->
             let data =( maybe'[url]|>Option.defaultValue [||]  ):?>string array
@@ -253,4 +253,10 @@ type DataStorage =
          let! b= DataStorage.readCardLib
          
          return b
+      }
+    static member getHomeUrlCards (url:string )=
+      promise{
+        let! card_ids = DataStorage.readCardIdsFromUrl url
+        let! cards = DataStorage.readCards(card_ids)
+        return cards 
       }

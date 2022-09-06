@@ -174,7 +174,7 @@ module CardLib =
         
       get.onclick<-fun e->
         DataStorage.readCards([|card.Id|]).``then``(
-            fun cards->cards|>Seq.iter (fun (e:Save.Card)-> Card.load this.env.env e)
+            fun cards->cards|>Seq.iter (fun (e:Save.Card)-> Card.load this.env.env {e with show=true} |>ignore)
           )|>ignore
       brick
       

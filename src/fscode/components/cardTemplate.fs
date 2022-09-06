@@ -345,7 +345,7 @@ module Card =
         let! a= DataStorage.appendCardToCardLib [|this.env.Id|]
         a
       }
-      
+      this.env.state.show<-true
       
       
     member this.hide =
@@ -430,6 +430,7 @@ module Card =
         carrier.style.position <- "absolute"
         tooltip.innerText<- "钉在页面"        
         pointF.setElementPosition carrier newp
+        
         DataStorage.moveFromAToBList this.env.state.homeUrl currentUrl [|Id'|]
         DataStorage.removeFromList TravelCards.S [|Id'|]
         this.env.state.homeUrl<-currentUrl
@@ -795,9 +796,14 @@ module Card =
       |Some iCore ->
         iCore:?>Core 
       |_->Init env p card.Id
+    console.log"core.state.pinState="
+    console.log core.state.pinState
     core.state.clone card // 这个地方 很重要, 以后新增什么属性, 需要看看有没有成功克隆
     core.op_view.init
     core.op_field.clearFields
     core.op_field.loadFields card.fields
+    console.log core.state.pinState
     if core.state.pinState = PinState.Travel then
       DataStorage.removeFromList window.location.href [|core.Id|] |>ignore
+    core.op_state.save
+    core
