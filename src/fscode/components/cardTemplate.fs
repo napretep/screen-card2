@@ -877,7 +877,8 @@ module Card =
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core.op_view.show
     core.op_event.initSelfMini
-    
+    if core.state.mini then core.op_view.setMini
+    else  core.op_view.showNormal
     core
   //从内存读取
   let load (env:GlobalCore) (card:Save.Card) =
@@ -897,6 +898,5 @@ module Card =
     if core.state.pinState = PinState.Travel then
       DataStorage.removeFromList window.location.href [|core.Id|] |>ignore
     core.op_state.save
-    if core.state.mini then core.op_view.setMini
-    else  core.op_view.showNormal
+    
     core
