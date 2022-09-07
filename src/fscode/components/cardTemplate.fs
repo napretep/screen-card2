@@ -145,6 +145,9 @@ module Card =
     mutable show:bool
     mutable birthUrl:string
     mutable mini:bool
+    mutable version:float
+    mutable saveXcoord:float //当最小化时, 保存最小化之前的位置
+    mutable saveSize:size2d//当最小化时,保存最小化之前的尺寸
   }
   with
     static member init =
@@ -171,6 +174,9 @@ module Card =
       show=true
       birthUrl=window.location.href
       mini=false
+      version=0.0
+      saveXcoord=0.0
+      saveSize= size2d.zero
     }
     member this.clone (card:Save.Card) =
       this.homeUrl<-card.homeUrl
@@ -183,6 +189,7 @@ module Card =
       this.show<- card.show
       this.birthUrl <- card.birthUrl
       this.mini<-card.mini
+      this.version<-card.version
       ()
 
   type Event' = {
@@ -217,15 +224,7 @@ module Card =
                          ] []
       ]
       Div [classes [Common_glass;];Id CardField_btns] [
-        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_link 
-        //      InnerHtml <| ICON.backlink 
-        //      ] []
-        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_expand
-        //      InnerHtml <| ICON.expand] []
-        // Div [classes [Common_glass;Common_btn] ;Id CardField_btns_del
-        //      InnerHtml <| ICON.del 
-        //      ] []
-        
+
         mkBtn ICON.backlink CardField_btns_link  "笔记溯源" "l"
         mkBtn ICON.expand CardField_btns_expand  "收起/展开" "l"
         mkBtn ICON.del CardField_btns_del  "删除笔记" "l"
@@ -252,7 +251,8 @@ module Card =
           ]
           mkBtnMoveH Card_header_btn_move 
           Div [classes [Common_glass;Card_header_side_btn] ;Id Card_header_right_btn] [
-
+              
+              mkBtn ICON.minimize Card_header_btn_mini "最小化" "t"
               mkBtn ICON.pin Card_header_btn_pin "" "t"
               mkBtn ICON.powerOff Card_header_btn_close "关闭" "t"
               
@@ -263,10 +263,13 @@ module Card =
         
       ]
       ]
-      
+      Div [classes [Common_glass;];Id Card_self_mini] [
+      mkBtn ICON.HorizontalMoveBar Card_mini_btn_move "拖动" "l"
+      mkBtn ICON.minimize Card_mini_btn_max "恢复" "l"
+    ]
     ]
   
-  
+
   
   type Core(env:GlobalCore,view:Brick,Id:string) as this=
     inherit ICore(view,Id,SaveKind.Card)
@@ -278,8 +281,58 @@ module Card =
     member val op_state  = Op_State(this)
     member val op_view:Op_View  = Op_View(this)
     member val op_field:Op_Field = Op_Field(this)
+    member val op_event = Op_Event(this)
+    member val actor = Actor (this)
+  and Op_Event(env:Core) =
+    member val Gevent = env.env.event
+    member val env = env
+    member this.initSelfMini =
+      let max:HTMLElement = env.actor.btn_mini_max
+      let move = env.actor.btn_mini_move
+      let svg = max.children[0]
+      svg.classList.add Common_rotate180.S
+      max.onclick<-fun e->
+        env.state.mini<-false
+        env.op_view.switch_Mini_Normal
+        ()
+      move.onmousedown<-fun e->
+          let root =env.view.element.Value
+          let oldEP = pointF.fromElementBounding root
+          let oldMP = pointF.fromMouseEvent e
+          let mutable IsMoving = true     
+          env.env.root|> Op_element.addMask |> ignore
+          let onMoveHandle = Handler<MouseEvent>(fun sender e2->
+              if IsMoving && e2.buttons =1 then    
+                let newMouseP = pointF.fromMouseEvent e2
+                pointF.setElementPosition root (oldEP+(newMouseP-oldMP))
+                ()
+            )
+          let onBtnUpHandle = Handler<MouseEvent>( fun sender e3 ->
+                if IsMoving then
+                  IsMoving<-false
+                  env.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
+                  env.env.root|>Op_element.delMask|> ignore
+                  env.op_view.miniSelfCloseToRight
+                  ()
+            )
+          env.env.event.mouseMoving.Publish.AddHandler onMoveHandle
+          env.env.event.mouseUp.Publish.AddHandler onBtnUpHandle
     
+      ()
       
+  and Actor (env:Core) =
+    member val env = env
+    member this.btn_mini = env.view.selectId(Card_header_btn_mini)
+    member this.btn_mini_max = env.view.selectId(Card_mini_btn_max)
+    // member this.btn_mini_close = env.view.selectId(Card_mini_btn_close)
+    member this.btn_mini_move:HTMLElement = env.view.selectId(Card_mini_btn_move)
+    // member this.btn_mini_pin = env.view.selectId(Card_mini_btn_pin)
+    member this.carrier = env.view.element.Value
+    member this.self = env.view.selectId(Card_self)
+    member this.self_mini = env.view.selectId(Card_self_mini)
+    
+    member this.body = env.view.selectId(Card_body)
+    
   and Op_State (env:Core)  =
     member val env = env
     member this.saveRect=
@@ -290,11 +343,6 @@ module Card =
       console.log env.state.size
 
     member this.saveAndRefresh =
-      // let job = async {
-      //     do! Async.Sleep 50
-      //     this.save.``then``( fun x-> this.refresh )
-      // }
-      // Async.RunSynchronously job
       setTimeout (fun e->
           this.save.``then``( fun x-> this.refresh )
           ()
@@ -309,8 +357,11 @@ module Card =
 
       let carrier = this.env.view.element.Value
       let body = this.env.view.hashmap[Card_body.S].element.Value
-      let p = pointF.fromElementBounding carrier
-      let r = size2d.fromElementBounding body
+      let mutable p = pointF.fromElementBounding carrier
+      let mutable r = size2d.fromElementBounding body
+      if env.state.mini then
+        p.left<-env.state.saveXcoord
+        r<- env.state.saveSize
       let state = this.env.state
       let save:Save.Card  = 
         {
@@ -327,6 +378,7 @@ module Card =
           webScrollTo = state.webScrollTo.toTuple
           show=state.show
           mini=state.mini
+          version =state.version
         }
       console.log "save card"
       console.log save 
@@ -339,6 +391,39 @@ module Card =
         } 
   and  Op_View (env:Core) =
     member val env = env
+    member this.miniSelfCloseToRight=
+      env.view.element.Value.style.left <- "calc(100% - 30px)"
+      
+      ()
+
+    member this.showMini =
+      Op_element.displayNone this.env.actor.self
+      Op_element.displayNonNone this.env.actor.self_mini
+      ()
+    member this.showNormal =
+      Op_element.displayNone this.env.actor.self_mini
+      Op_element.displayNonNone this.env.actor.self
+      ()
+    member this.setMini =
+      env.state.saveXcoord<- (pointF.fromElementBounding env.view.element.Value).left
+      env.state.saveSize<- size2d.fromElementBounding env.actor.body
+      this.showMini
+      this.miniSelfCloseToRight
+      ()
+    member this.setNormal =
+      this.showNormal
+      let newp =pointF.fromTuple (env.state.saveXcoord,(pointF.fromElementBounding env.view.element.Value).top)
+      pointF.setElementPosition env.actor.carrier newp
+      size2d.setElementStyleSize env.actor.body
+      env.op_state.saveAndRefresh
+      ()
+    member this.switch_Mini_Normal =
+      if this.env.state.mini then
+        this.setMini
+        ()
+      else
+        this.setNormal 
+        ()
     member this.show =
       this.env.env.addMember this.env
       promise{
@@ -704,7 +789,12 @@ module Card =
     let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
     let addTxt = core.view.hashmap[Card_header_btn_addTxt.S].element.Value
     let addImg = core.view.hashmap[Card_header_btn_addImg.S].element.Value
+    let mini =core.actor.btn_mini
     let self = core.view.element.Value
+    mini.onclick<- fun e->
+      core.state.mini<-true
+      core.op_view.switch_Mini_Normal
+      
     self.onclick <- fun e->
       core.env.state.setFocus self
     // self.onmouseup <- fun e->
@@ -786,6 +876,8 @@ module Card =
     }
     core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
     core.op_view.show
+    core.op_event.initSelfMini
+    
     core
   //从内存读取
   let load (env:GlobalCore) (card:Save.Card) =
@@ -796,8 +888,7 @@ module Card =
       |Some iCore ->
         iCore:?>Core 
       |_->Init env p card.Id
-    console.log"core.state.pinState="
-    console.log core.state.pinState
+    
     core.state.clone card // 这个地方 很重要, 以后新增什么属性, 需要看看有没有成功克隆
     core.op_view.init
     core.op_field.clearFields
@@ -806,4 +897,6 @@ module Card =
     if core.state.pinState = PinState.Travel then
       DataStorage.removeFromList window.location.href [|core.Id|] |>ignore
     core.op_state.save
+    if core.state.mini then core.op_view.setMini
+    else  core.op_view.showNormal
     core

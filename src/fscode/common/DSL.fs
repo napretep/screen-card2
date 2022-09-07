@@ -95,6 +95,8 @@ with
                      )  
   member this.select (selector:string) =
     this.element.Value.querySelector(selector):?>HTMLElement
+  member this.selectId (selector:CssClass) =
+    this.element.Value.querySelector($"#{selector}"):?>HTMLElement
 end
 let getElementFromBrick (brick:Brick) (query:string):HTMLElement=
   brick.element.Value.querySelector(query):?>HTMLElement

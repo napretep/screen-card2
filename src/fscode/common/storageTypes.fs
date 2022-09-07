@@ -73,6 +73,7 @@ module Save=
     mutable size:float*float
     mutable show:bool//关闭后通常不会show
     mutable mini:bool//缩小在最右侧
+    mutable version:float
   }
   
 

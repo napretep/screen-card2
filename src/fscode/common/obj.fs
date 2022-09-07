@@ -83,6 +83,10 @@ module URL =
 module ICON =
     let (==) (input:string list) (preset:string) =
         input|>Seq.fold (fun sum next->Some next) None |>Option.defaultValue preset
+    let minimize = """
+
+<?xml version="1.0" encoding="UTF-8"?><svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12L31 24L19 36" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+"""
     let refresh = """
 <?xml version="1.0" encoding="UTF-8"?><svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M42 8V24" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 24L6 40" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 24C42 14.0589 33.9411 6 24 6C18.9145 6 14.3216 8.10896 11.0481 11.5M6 24C6 33.9411 14.0589 42 24 42C28.8556 42 33.2622 40.0774 36.5 36.9519" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
 
@@ -173,8 +177,8 @@ module Geometry =
 
 
     type pointF={
-        left:float
-        top:float 
+        mutable left:float
+        mutable top:float 
     }
     with
         
@@ -200,8 +204,8 @@ module Geometry =
         static member (==) (a:pointF,b:pointF)=
             a.left=b.left && b.top=a.top
     type size2d ={
-        width:float
-        height:float
+        mutable width:float
+        mutable height:float
     }
     with
         static member set w h = {
@@ -217,10 +221,10 @@ module Geometry =
             a.width=b.width && b.height=a.height
         
     type Rect ={
-        top:float
-        left:float
-        width:float
-        height:float
+        mutable top:float
+        mutable left:float
+        mutable width:float
+        mutable height:float
     }
     with
         static member set x y w h =

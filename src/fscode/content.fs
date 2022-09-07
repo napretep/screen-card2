@@ -282,7 +282,9 @@ window.onmouseup <- fun e->
   DataStorage.readAll.``then``(fun e-> console.log(e))
   match AssistDot.state.MoveBegin with
   |true ->
-    AssistDot.state.MoveBegin<-false 
+    AssistDot.state.MoveBegin<-false
+    let carrier = AssistDot.view.element.Value
+    carrier.style.left<- "calc(100% - 30px)"
   |_ -> ()
 
 chromeRuntime.onMessage.addListener (

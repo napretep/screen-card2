@@ -41,9 +41,9 @@ module CardLib =
       ]
       Div [Id CardLib_card_btns;
            ] [
-        mkBtn ICON.trashBin CardField_btns_del "删除卡片" "l"
-        mkBtn ICON.expand CardField_btns_expand "打开卡片" "l"
-        mkBtn ICON.backlink  CardLib_card_btns_backlink "溯源卡片" "l"
+        mkBtn ICON.backlink  CardLib_card_btn_backlink "溯源卡片" "l"
+        mkBtn ICON.expand CardLib_card_btn_get "打开卡片" "l"
+        mkBtn ICON.trashBin CardLib_card_btn_del "删除卡片" "l"
 
       ]
   ]
@@ -69,21 +69,10 @@ module CardLib =
                    InnerHtml <| ICON.search []
             ] []
           ]
-          Span [classes<| [Common_glass;Common_btn;Common_moveBar]
-                Id CardLib_moveBar
-                InnerHtml <| ICON.HorizontalMoveBar
-          ] []
+          mkBtnMoveH CardLib_moveBar
           Span [Id CardLib_toolbar_right ] [
             mkBtn ICON.refresh CardLib_card_btns_refresh "刷新卡片" "t"
-            // Span [classes [Common_glass;Common_btn]
-            //       InnerHtml <| ICON.pin
-            //       Id CardLib_toolbar_right_pin
-            //       ] []
             mkBtn  ICON.close CardLib_toolbar_right_close "关闭卡片库" "t"
-            // Span [classes [Common_glass;Common_btn]
-            //       InnerHtml <| ICON.close
-            //       Id CardLib_toolbar_right_close
-            //       ] []
           ]
         ]
         Div [Id CardLib_container; classes [Common_glass]] [
@@ -162,8 +151,12 @@ module CardLib =
       let brick = build (cardItem img text)
       brick.Id<-card.Id
       body.appendChild brick.element.Value|>ignore
-      let del = brick.hashmap[CardField_btns_del.S].element.Value
-      let get = brick.hashmap[CardField_btns_expand.S].element.Value
+      let del = brick.hashmap[CardLib_card_btn_del.S].element.Value
+      let get = brick.hashmap[CardLib_card_btn_get.S].element.Value
+      let source = brick.hashmap[CardLib_card_btn_backlink.S].element.Value
+      source.onclick<-fun e->
+        window.``open``(card.homeUrl)
+        ()
       del.onclick <- fun e->
         DataStorage.removeCardsFromCardLib([|card.Id|]).``then``(
           fun e->

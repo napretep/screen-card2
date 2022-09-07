@@ -20,6 +20,7 @@ type [<StringEnum>] CssClass =
     |Common_textArea
     |Common_flex_grow_1
     |Common_toolTip
+    |Common_rotate180
     |AssistDot_carrier
     |AssistDot_self
     |AssistDot_btn
@@ -40,10 +41,17 @@ type [<StringEnum>] CssClass =
     |CardLib_card_content
     |CardLib_card_btns
     |CardLib_searchInput
-    |CardLib_card_btns_backlink
+    |CardLib_card_btn_backlink
     |CardLib_card_btns_refresh
+    |CardLib_card_btn_get
+    |CardLib_card_btn_del
     |Card_carrier
     |Card_self
+    |Card_self_mini
+    |Card_mini_btn_close
+    |Card_mini_btn_move
+    |Card_mini_btn_pin
+    |Card_mini_btn_max
     |Card_header
     |Card_header_left_btn
     |Card_header_right_btn
@@ -54,6 +62,8 @@ type [<StringEnum>] CssClass =
     |Card_header_btn_close
     |Card_header_btn_addImg
     |Card_header_btn_addTxt
+    |Card_header_btn_mini
+
     |Card_body
     |CardField_self
     |CardField_moveBar
@@ -247,7 +257,7 @@ let cardLibStyle = $"""
 #{CardLib_container}{{
 	margin:2px;
 	display:flex;
-	justify-content: space-around;
+	justify-content: flex-start;
 	align-content: start;
 	overflow-y: scroll;
 	scroll-behavior: smooth;
@@ -261,9 +271,8 @@ let cardLibStyle = $"""
 #{CardLib_card_item}{{
 	display:flex;
 	max-width:200px;
-	height:40px;
 	margin:2px;
-	align-items: center;
+	align-items: stretch;
 }}
 #{CardLib_card_content}>img{{
 	object-fit: cover;
@@ -300,6 +309,9 @@ flex-grow: 2;
 """
 
 let commonStyle = $"""
+.{Common_rotate180}{{
+	transform:rotate(180deg);
+}}
 .{Common_toolTip}{{
 	visibility: hidden;
 	position: absolute;
@@ -307,7 +319,7 @@ let commonStyle = $"""
     height: min-content;
     font-size: 0.5rem;
     font-family: "Microsoft JhengHei Light";
-    background:white;
+    background:white !important;
 }}
 .{Common_zindexFocus}{{
 	z-index:9999999;
@@ -317,6 +329,8 @@ let commonStyle = $"""
 	z-index:9999999;
 	top:0;
 	left:0;
+	width:100%%;
+	height:100%%;
 }}
 .{Common_mask}{{
 	background:#ffffff50;
