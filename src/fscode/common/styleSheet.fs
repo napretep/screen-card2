@@ -45,6 +45,7 @@ type [<StringEnum>] CssClass =
     |CardLib_card_btns_refresh
     |CardLib_card_btn_get
     |CardLib_card_btn_del
+    |CardLib_card_btns_search
     |Card_carrier
     |Card_self
     |Card_self_mini

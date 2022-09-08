@@ -65,8 +65,9 @@ module CardLib =
                     classes<| [Common_glass;Common_btn]
                     PlaceHolder "search"
             ] []
-            Span [ classes<| [Common_glass;Common_btn]
-                   InnerHtml <| ICON.search []
+            // Span [ classes<| [Common_glass;Common_btn]
+            //        InnerHtml <| ICON.search []
+            mkBtn ICON.search CardLib_card_btns_search "过滤卡片(未完成)" "t"
             ] []
           ]
           mkBtnMoveH CardLib_moveBar
