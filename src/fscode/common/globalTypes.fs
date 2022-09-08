@@ -47,21 +47,21 @@ with
     let frame = build (
       Div [Id CapturingFrame_carrier] [
       
-      Div [Id CapturingFrame_self;] [] 
-      Div [Id CapturingFrame_btns; classes [Common_displayNone]] [
-          Span [Id CapturingFrame_btns_no
-                classes [Common_btn;Common_glass;]
-                InnerHtml <| ICON.close
-                ] []
-          Span [Id CapturingFrame_btns_ok
-                classes [Common_btn;Common_glass;]
-                InnerHtml <| ICON.confirm
-                ] []
-        ]
-      Span [
-        Styles ["justify-content: center;"]
-        classes [Common_btn;Common_moveBar;Common_glass;Common_displayNone]; InnerHtml <| ICON.HorizontalMoveBar
-      ] []
+        Div [Id CapturingFrame_self;] [] 
+        Div [Id CapturingFrame_btns; classes [Common_displayNone]] [
+              Span [Id CapturingFrame_btns_no
+                    classes [Common_btn;Common_glass;]
+                    InnerHtml <| ICON.close
+                    ] []
+              Span [Id CapturingFrame_btns_ok
+                    classes [Common_btn;Common_glass;]
+                    InnerHtml <| ICON.confirm
+                    ] []
+          ]
+        Span [
+          Styles ["justify-content: center;"]
+          classes [Common_btn;Common_moveBar;Common_glass;Common_displayNone]; InnerHtml <| ICON.HorizontalMoveBar
+        ] []
     ]
      )
     let canvas = document.createElement "canvas" :?>HTMLCanvasElement
@@ -89,6 +89,7 @@ type GlobalEvent={
   drawBegin:Event<unit>
   screenCapBegin:Event<string> //string 是 card id
   screenCapOk:Event<unit> // card id * dataurl 不传播数据, 数据通过globalstate传播
+  screenCapSendMsg:Event<unit>
   openCardFromDB:Event<string> // string 为card id
   deleteCardInDB:Event<string>
   updateCards:Event<string>
@@ -107,6 +108,7 @@ with
       deleteCardInDB=Event<string>()
       updateCards=Event<string>()
       updateCardLib=Event<_>()
+      screenCapSendMsg=Event<_>()
     }
 
 

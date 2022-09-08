@@ -252,13 +252,20 @@ CapFrameCancelBtn.onclick <- fun e->
   rootCarrierRestore()
 
 CapFrameAcceptBtn.onclick <- fun e->
-  globalCore.state.FrameRect<- Rect.fromElement  globalCore.state.FrameDiv
+  globalCore.state.FrameRect<- Rect.fromElement  (globalCore.state.FrameDiv.children[0]:?>HTMLElement)
   Op_element.displayNone globalCore.state.FrameDiv
-  JS.setTimeout (fun ()->
-     chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
-     ()
-   ) 20|>ignore
+  let frame =globalCore.state.FrameDiv
+  frame.remove()
+  globalCore.event.screenCapSendMsg.Trigger()
+
+  
+  
   ()
+
+globalCore.event.screenCapSendMsg.Publish.Add( fun e->
+    // console.log (window.getComputedStyle(globalCore.state.FrameDiv))
+    chromeRuntime.sendMessage {MsgToBackendHeader with purpose=ScreenCapRequest} |>ignore
+  )
 
 AssistDot.Subscribe.OpenCardLib.Add (fun ()->
   if cardLib.state.IsShow then
@@ -292,9 +299,9 @@ chromeRuntime.onMessage.addListener (
     match msg.purpose with
     | ScreenCapOK ->
       
-      let frame =globalCore.state.FrameDiv
-      frame.remove()
-      Op_element.displayNonNone frame
+      // let frame =globalCore.state.FrameDiv
+      // frame.remove()
+      Op_element.displayNonNone globalCore.state.FrameDiv
       let el = build (Img [ ] [ ])
       let img = el.element.Value:?>HTMLImageElement
       // window.setTimeout()
@@ -313,7 +320,7 @@ chromeRuntime.onMessage.addListener (
         globalCore.state.ScreenCapDataUrl <- canvas.toDataURL()
         globalCore.event.screenCapOk.Trigger()
       img.src<- (msg.content:?>string)
-      Fable.Core.JS.setTimeout job 30
+      Fable.Core.JS.setTimeout job 100
       
       ()        
     | ScreenCapNo ->

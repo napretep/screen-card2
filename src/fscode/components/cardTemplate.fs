@@ -169,8 +169,8 @@ module Card =
       createTime= thisTime.valueOf()
       editTime= thisTime.valueOf()
       pinState = PinToPage
-      size=size2d.zero
-      position = pointF.zero
+      size=size2d.set 300 300
+      position = pointF.set 200 200
       show=true
       birthUrl=window.location.href
       mini=false
@@ -305,6 +305,7 @@ module Card =
               if IsMoving && e2.buttons =1 then    
                 let newMouseP = pointF.fromMouseEvent e2
                 pointF.setElementPosition root (oldEP+(newMouseP-oldMP))
+                env.state.position <- oldEP+(newMouseP-oldMP)
                 ()
             )
           let onBtnUpHandle = Handler<MouseEvent>( fun sender e3 ->
@@ -344,10 +345,10 @@ module Card =
 
     member this.saveAndRefresh =
       setTimeout (fun e->
-          this.save.``then``( fun x-> this.refresh )
+          this.save.``then``( fun x-> this.refreshCard )
           ()
           ) 50
-    member this.refresh =
+    member this.refreshCard =
       promise {
         setTimeout (fun e->this.env.env.event.updateCards.Trigger(this.env.Id)) 200|>ignore
       }
@@ -360,8 +361,9 @@ module Card =
       let mutable p = pointF.fromElementBounding carrier
       let mutable r = size2d.fromElementBounding body
       if env.state.mini then
-        p.left<-env.state.saveXcoord
-        r<- env.state.saveSize
+        p<-env.state.position
+        r<- env.state.size
+        
       let state = this.env.state
       let save:Save.Card  = 
         {
@@ -371,8 +373,8 @@ module Card =
           editTime = state.editTime
           fields = fieldsState
           pin = float state.pinState.getNumber
-          position = if p.toTuple = pointF.zero.toTuple then state.position.toTuple else p.toTuple 
-          size = if r.toTuple = size2d.zero.toTuple then state.size.toTuple else r.toTuple
+          position = env.state.position.toTuple
+          size = env.state.size.toTuple
           birthUrl = state.birthUrl
           homeUrl = state.homeUrl
           webScrollTo = state.webScrollTo.toTuple
@@ -383,10 +385,10 @@ module Card =
       console.log "save card"
       console.log save 
       (DataStorage.set save.Id (AllowStoreType.Card save))
-    member this.newSave_Refresh =
+    member this.newSave_RefreshCard =
         promise {
           let! r1 = this.save
-          let! r2 = this.refresh
+          let! r2 = this.refreshCard
           return r2
         } 
   and  Op_View (env:Core) =
@@ -412,10 +414,10 @@ module Card =
       ()
     member this.setNormal =
       this.showNormal
-      let newp =pointF.fromTuple (env.state.saveXcoord,(pointF.fromElementBounding env.view.element.Value).top)
-      pointF.setElementPosition env.actor.carrier newp
-      size2d.setElementStyleSize env.actor.body
-      env.op_state.saveAndRefresh
+      console.debug $"position= {env.state.position}"
+      pointF.setElementPosition env.actor.carrier env.state.position
+      size2d.setElementStyleSize env.actor.body env.state.size
+      
       ()
     member this.switch_Mini_Normal =
       if this.env.state.mini then
@@ -424,6 +426,7 @@ module Card =
       else
         this.setNormal 
         ()
+      env.op_state.saveAndRefresh |>ignore
     member this.show =
       this.env.env.addMember this.env
       promise{
@@ -457,7 +460,11 @@ module Card =
       size2d.setElementStyleSize body state.size 
       this.setPinColor
       this.AfterSetPinColor state.position
-      
+      if env.state.mini then
+        env.op_view.setMini
+      else
+        env.op_view.setNormal
+
     member this.movePosition (nowMouseAt:pointF) =
       
       let style = env.view.element.Value.style
@@ -540,7 +547,7 @@ module Card =
       
       
       ()
-    member this.setPinColor =
+    member this.setPinColor:Op_View =
       let Pin = env.view.hashmap[Card_header_btn_pin.S].element.Value
       match env.state.pinState with
       |PinToPage ->
@@ -549,7 +556,7 @@ module Card =
         Pin.style.background<-"yellow"
       |Travel ->
         Pin.style.background<-"#7e7"
-    // member this.checkPin =
+      this
       
   and Op_Field (env:Core)  as self=
     member val lastY:float = -1 with get,set
@@ -783,7 +790,7 @@ module Card =
       state = State.init,
       Id = id
     )
-    
+    //set event
     let close =core.view.hashmap[Card_header_btn_close.S].element.Value
     let move = core.view.hashmap[Card_header_btn_move.S].element.Value
     let pin = core.view.hashmap[Card_header_btn_pin.S].element.Value
@@ -792,13 +799,12 @@ module Card =
     let mini =core.actor.btn_mini
     let self = core.view.element.Value
     mini.onclick<- fun e->
+      core.state.position<- pointF.fromElementStyle core.actor.carrier
       core.state.mini<-true
       core.op_view.switch_Mini_Normal
       
     self.onclick <- fun e->
       core.env.state.setFocus self
-    // self.onmouseup <- fun e->
-    //   setTimeout (fun e->core.op_state.save.``then``(fun e->core.op_state.refresh) |> ignore) 20
     self.onmouseup <- fun e->
       core.op_state.saveAndRefresh
       ()
@@ -816,7 +822,7 @@ module Card =
       core.op_state.save.``then``(
         fun e->
           core.op_view.hide
-          core.op_state.refresh
+          core.op_state.refreshCard
         )
       core.event.Close.Trigger()
     
@@ -841,6 +847,7 @@ module Card =
               IsMoving<-false
               core.env.event.mouseMoving.Publish.RemoveHandler onMoveHandle
               core.env.root|>Op_element.delMask|> ignore
+              core.state.position <- pointF.fromElementBounding core.actor.carrier
               core.op_state.saveAndRefresh
               ()
         )
@@ -854,7 +861,6 @@ module Card =
       core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
       setTimeout (fun e->core.op_state.saveAndRefresh|>ignore) 200|>ignore
       
-    // core.event.Close.Publish.Add <| fun e->
       
     core.event.MoveBegin.Publish.Add <| fun e->
       let r = view.element.Value.getBoundingClientRect()
@@ -867,18 +873,22 @@ module Card =
         core.op_view.movePosition (pointF.set e.clientX e.clientY)
     env.event.mouseUp.Publish.Add <| fun e->
       core.state.IsMoving <-false
+      
+    //set obj 
     env.addMember core
-    core.op_view.setPinColor
+    // core.op_view.setPinColor.AfterSetPinColor core.state.position
     promise {
-      let! r1=core.op_state.newSave_Refresh
+      let! r1=core.op_state.newSave_RefreshCard
       core.env.event.updateCardLib.Trigger()
       return r1
     }
-    core.op_view.AfterSetPinColor (pointF.fromElementBounding core.view.element.Value)
+    core.op_view.AfterSetPinColor core.state.position
     core.op_view.show
     core.op_event.initSelfMini
-    if core.state.mini then core.op_view.setMini
-    else  core.op_view.showNormal
+    if core.state.mini then
+        core.op_view.setMini
+    else
+        core.op_view.setNormal
     core
   //从内存读取
   let load (env:GlobalCore) (card:Save.Card) =

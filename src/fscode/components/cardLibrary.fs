@@ -158,12 +158,14 @@ module CardLib =
         window.``open``(card.homeUrl)
         ()
       del.onclick <- fun e->
-        DataStorage.removeCardsFromCardLib([|card.Id|]).``then``(
-          fun e->
-            this.delayReload
-            this.env.env.event.updateCards.Trigger(card.Id)|>ignore
-            this.env.env.removeMember card.Id
-         )|>ignore
+        promise{
+          let! x = DataStorage.removeCardsFromCardLib([|card.Id|])
+          let! x2 = DataStorage.removeCardsFromTravelCards([|card.Id|])
+          this.env.env.event.updateCards.Trigger(card.Id)|>ignore
+          this.env.env.removeMember card.Id
+          this.delayReload
+        }|>ignore
+        ()        
         
       get.onclick<-fun e->
         DataStorage.readCards([|card.Id|]).``then``(

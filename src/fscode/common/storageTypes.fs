@@ -167,16 +167,20 @@ type DataStorage =
     
     //读取DB中的list, 并去掉指定的元素
     static member removeFromList (key:string) (values:obj array ) =
+      promise {
+        let! maybeData = DataStorage.read([|key|])
+        let data =
+          match maybeData[key] with
+          |Some d-> d:?> string array
+          |_ -> [||]
+        let newData = data |>Seq.filter (fun e-> values|>Seq.contains e |> not )|>Seq.toArray
+        console.log "travelCards"
+        console.log newData
+        let! r =DataStorage.set key (AllowStoreType.Array' newData)
+        ()
+      }
       
-      DataStorage.read([|key|]).``then``(
-        fun maybeData ->
-          let data =
-            match maybeData[key] with
-            |Some d-> d:?> string array
-            |_ -> [||]
-          let newData = data |>Seq.filter (fun e-> values|>Seq.contains e |> not )|>Seq.toArray 
-          DataStorage.set key (AllowStoreType.Array' newData)
-      )
+      
       
     static member moveFromAToBList (A:string) (B:string) (value':string array) =
       let value =unbox<obj array> value'
@@ -247,6 +251,9 @@ type DataStorage =
       DataStorage.delMany(card_ids).``then``(
         fun e->  DataStorage.removeFromList CardLib.S (card_ids|>Seq.map(fun e->e:>obj)|>Seq.toArray)
         )
+    static member removeCardsFromTravelCards(card_ids:string array) =
+      DataStorage.removeFromList TravelCards.S (unbox<obj array>card_ids)
+    
     static member appendCardToCardLib (card_id) =
       promise{
          let! a= DataStorage.appendToListUnique CardLib.S card_id
